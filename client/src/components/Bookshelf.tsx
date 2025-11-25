@@ -5,7 +5,6 @@ import Book3D from "./Book3D";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import woodTexture from "@assets/generated_images/mid-century_modern_dark_walnut_wood_texture_seamless_pattern.png";
 
 export default function Bookshelf() {
   const [mode, setMode] = useState<"motion" | "css">("motion");
@@ -47,18 +46,10 @@ export default function Bookshelf() {
   return (
     <section 
       id="bookshelf" 
-      className="py-24 px-6 md:px-12 min-h-screen relative"
-      style={{
-        backgroundImage: `url(${woodTexture})`,
-        backgroundSize: '400px',
-        backgroundRepeat: 'repeat'
-      }}
+      className="py-24 px-6 md:px-12 min-h-screen relative bg-card"
     >
-      {/* Dark overlay to make text readable but keep texture visible */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none z-0" />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8 bg-card/90 p-8 rounded-lg backdrop-blur-md border border-white/10 shadow-2xl">
+      <div className="max-w-5xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
           <div className="space-y-4">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary">Curated Bookshelf</h2>
             <p className="text-muted-foreground max-w-lg">
@@ -79,11 +70,11 @@ export default function Bookshelf() {
         </div>
 
         <div className="space-y-16">
-          {/* Group books into rows of 4 for the shelf effect */}
-          {Array.from({ length: Math.ceil(displayedBooks.length / 4) }).map((_, rowIndex) => (
+          {/* Group books into rows of 2 for the shelf effect (2 books per x-axis) */}
+          {Array.from({ length: Math.ceil(displayedBooks.length / 2) }).map((_, rowIndex) => (
             <div key={rowIndex} className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-8 place-items-center relative z-10">
-                {displayedBooks.slice(rowIndex * 4, (rowIndex + 1) * 4).map((book) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 place-items-center relative z-10 pb-2">
+                {displayedBooks.slice(rowIndex * 2, (rowIndex + 1) * 2).map((book) => (
                   mode === "motion" ? (
                     <BookMotion key={book.id} book={book} />
                   ) : (
@@ -93,8 +84,8 @@ export default function Bookshelf() {
               </div>
               
               {/* Shelf Graphic */}
-              <div className="absolute -bottom-8 left-[-50px] right-[-50px] h-8 bg-[#3e2723] shadow-[0_10px_20px_rgba(0,0,0,0.5)] rounded-sm transform perspective-[1000px] rotate-x-12 border-t border-[#5d4037]">
-                 <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40"></div>
+              <div className="absolute -bottom-8 left-[-50px] right-[-50px] h-8 bg-[#3e2723] shadow-[0_10px_20px_rgba(0,0,0,0.15)] rounded-sm transform perspective-[1000px] rotate-x-12 border-t border-[#5d4037]">
+                 <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
               </div>
             </div>
           ))}
@@ -103,7 +94,7 @@ export default function Bookshelf() {
         {/* Loading Indicator / Intersection Target */}
         <div ref={observerTarget} className="flex justify-center py-12 mt-8">
           {isLoading && (
-            <div className="bg-card/80 p-4 rounded-full shadow-xl backdrop-blur-sm">
+            <div className="bg-card/80 p-4 rounded-full shadow-xl backdrop-blur-sm border border-border">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           )}
