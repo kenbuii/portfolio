@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const links = [
     { href: "/", label: "Home" },
+    { href: "/bookshelf", label: "Bookshelf" },
     { href: "/writings", label: "Writings" },
     { href: "/admin", label: "Admin" },
   ];

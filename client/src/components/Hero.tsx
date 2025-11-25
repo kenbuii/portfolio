@@ -19,21 +19,21 @@ export default function Hero() {
           <p>
             I am a multidisciplinary designer and developer based in San Francisco. 
             My work sits at the intersection of{" "}
-            <button 
-              onClick={() => scrollToSection("bookshelf")}
-              className="underline decoration-1 decoration-secondary/50 underline-offset-4 hover:decoration-secondary hover:text-secondary transition-all duration-300 cursor-pointer inline-block bg-transparent border-none p-0 font-light"
-              data-testid="link-interest-curation"
-            >
-              curation
-            </button>
+            <Link href="/bookshelf">
+              <span 
+                className="underline decoration-1 decoration-secondary/50 underline-offset-4 hover:decoration-secondary hover:text-secondary transition-all duration-300 cursor-pointer inline-block"
+                data-testid="link-interest-curation"
+              >
+                curation
+              </span>
+            </Link>
             ,{" "}
-            <button
-              onClick={() => scrollToSection("technology")}
-              className="underline decoration-1 decoration-secondary/50 underline-offset-4 hover:decoration-secondary hover:text-secondary transition-all duration-300 cursor-pointer inline-block bg-transparent border-none p-0 font-light"
+            <span
+              className="underline decoration-1 decoration-secondary/50 underline-offset-4 hover:decoration-secondary hover:text-secondary transition-all duration-300 cursor-pointer inline-block"
               data-testid="link-interest-technology"
             >
               creative technology
-            </button>
+            </span>
             , and{" "}
             <Link href="/writings">
               <span 
