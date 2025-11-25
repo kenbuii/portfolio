@@ -70,11 +70,11 @@ export default function Bookshelf() {
         </div>
 
         <div className="space-y-16">
-          {/* Group books into rows of 2 for the shelf effect (2 books per x-axis) */}
-          {Array.from({ length: Math.ceil(displayedBooks.length / 2) }).map((_, rowIndex) => (
+          {/* Group books into rows of 4 for the shelf effect */}
+          {Array.from({ length: Math.ceil(displayedBooks.length / 4) }).map((_, rowIndex) => (
             <div key={rowIndex} className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 place-items-center relative z-10 pb-2">
-                {displayedBooks.slice(rowIndex * 2, (rowIndex + 1) * 2).map((book) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 place-items-center relative z-10 pb-2">
+                {displayedBooks.slice(rowIndex * 4, (rowIndex + 1) * 4).map((book) => (
                   mode === "motion" ? (
                     <BookMotion key={book.id} book={book} />
                   ) : (

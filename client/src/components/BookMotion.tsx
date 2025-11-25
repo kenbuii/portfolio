@@ -52,7 +52,7 @@ export default function BookMotion({ book }: BookMotionProps) {
   return (
     <>
       <motion.div
-        className="relative group perspective-1000 w-[240px] h-[360px] cursor-pointer z-10"
+        className="relative group perspective-1000 w-[140px] h-[210px] cursor-pointer z-10"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onClick={() => setIsOpen(true)}

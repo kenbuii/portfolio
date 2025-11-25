@@ -14,7 +14,7 @@ export default function Book3D({ book }: Book3DProps) {
   return (
     <>
       <div 
-        className="group relative w-[220px] h-[330px] cursor-pointer perspective-1000"
+        className="group relative w-[130px] h-[195px] cursor-pointer perspective-1000"
         onClick={() => setIsOpen(true)}
         data-testid={`book-css-${book.id}`}
       >
