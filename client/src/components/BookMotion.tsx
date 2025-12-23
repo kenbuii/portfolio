@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import { Book } from "@/lib/data";
-import { Star } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Star, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface BookMotionProps {
   book: Book;
@@ -11,6 +12,8 @@ interface BookMotionProps {
 
 export default function BookMotion({ book }: BookMotionProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [, navigate] = useLocation();
+  const bookRef = useRef<HTMLDivElement>(null);
   
   // Motion values for tilt effect
   const x = useMotionValue(0);
@@ -49,13 +52,30 @@ export default function BookMotion({ book }: BookMotionProps) {
     y.set(0);
   }
 
+  function handleOpenBook() {
+    setIsOpen(true);
+  }
+
+  function handleCloseBook() {
+    setIsOpen(false);
+  }
+
+  function handleShowMore() {
+    setIsOpen(false);
+    navigate(`/book/${book.id}`);
+  }
+
+  // Check if description is long - always truncate in modal
+  const isLongDescription = book.description.length > 200;
+
   return (
     <>
       <motion.div
+        ref={bookRef}
         className="relative group perspective-1000 w-[140px] h-[210px] cursor-pointer z-10"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpenBook}
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -90,8 +110,8 @@ export default function BookMotion({ book }: BookMotionProps) {
           {/* Pages (Right side) */}
           <div className="absolute right-0 top-2 bottom-2 w-[10px] bg-neutral-100 transform rotate-y-90 origin-right translate-x-[-5px] shadow-inner" />
 
-          {/* Popup Card */}
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[280px] bg-card border border-border p-4 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 pointer-events-none z-50 rounded-sm">
+          {/* Popup Card - above book, aligned right */}
+          <div className="absolute bottom-full right-0 mb-4 w-[280px] bg-card border border-border p-4 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none z-[60] rounded-sm">
              <h3 className="font-serif font-bold text-lg leading-tight mb-1">{book.title}</h3>
              <p className="text-xs text-muted-foreground mb-2">by {book.author}</p>
              <p className="text-sm leading-snug mb-3 line-clamp-3">{book.synopsis}</p>
@@ -108,48 +128,172 @@ export default function BookMotion({ book }: BookMotionProps) {
         </motion.div>
       </motion.div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-none shadow-2xl sm:rounded-lg">
-          <div className="grid md:grid-cols-2 h-full">
-             <div className="h-[300px] md:h-full relative bg-neutral-100 p-8 flex items-center justify-center">
-                <img src={book.cover} alt={book.title} className="max-h-full max-w-full shadow-2xl rotate-y-12 rounded-sm" />
-                <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.1)]"></div>
-             </div>
-             <div className="p-8 md:p-12 flex flex-col h-full overflow-y-auto">
-                <DialogHeader className="mb-6">
-                  <DialogTitle className="text-3xl md:text-4xl font-serif font-bold text-primary mb-2">{book.title}</DialogTitle>
-                  <DialogDescription className="text-lg text-muted-foreground font-medium">by {book.author}</DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-6 flex-grow">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Synopsis</h4>
-                    <p className="leading-relaxed text-foreground/80">{book.description}</p>
-                  </div>
-                  
-                  <div className="bg-secondary/5 p-4 rounded-sm border border-secondary/10">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-secondary mb-2">Review</h4>
-                    <p className="italic text-foreground/90 mb-3">"{book.review}"</p>
-                    <div className="flex items-center gap-2">
-                       <div className="flex gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating) ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
-                        ))}
-                       </div>
-                       <span className="text-sm font-mono text-muted-foreground">{book.rating}/5.0</span>
-                    </div>
-                  </div>
-                </div>
+      {/* Custom Modal with Page-Turn Animation - Rendered via Portal */}
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Backdrop - Higher z-index to cover everything */}
+              <motion.div
+                className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={handleCloseBook}
+              />
 
-                <div className="mt-8 pt-6 border-t border-border">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-serif rounded-sm">
-                    Purchase Copy
-                  </Button>
-                </div>
-             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+              {/* Book Modal */}
+              <motion.div
+                className="fixed inset-0 z-[101] flex items-center justify-center p-4 md:p-8 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="relative w-full max-w-3xl max-h-[85vh] bg-background rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
+                  initial={{
+                    scale: 0.3,
+                    rotateY: -90,
+                    opacity: 0,
+                  }}
+                  animate={{
+                    scale: 1,
+                    rotateY: 0,
+                    opacity: 1,
+                  }}
+                  exit={{
+                    scale: 0.3,
+                    rotateY: 90,
+                    opacity: 0,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 100,
+                    damping: 20,
+                    duration: 0.5,
+                  }}
+                  style={{
+                    perspective: "1000px",
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  {/* Close Button */}
+                  <button
+                    onClick={handleCloseBook}
+                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background/90 hover:bg-background shadow-lg transition-colors border border-border"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <div className="grid md:grid-cols-[280px_1fr] h-full max-h-[85vh]">
+                    {/* Book Cover Side - Left Page */}
+                    <motion.div 
+                      className="h-[200px] md:h-auto relative bg-neutral-100 p-6 flex items-center justify-center overflow-hidden"
+                      initial={{ rotateY: -20 }}
+                      animate={{ rotateY: 0 }}
+                      transition={{ delay: 0.2, duration: 0.4 }}
+                    >
+                      {/* Page fold effect */}
+                      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/10 to-transparent" />
+                      <motion.img 
+                        src={book.cover} 
+                        alt={book.title} 
+                        className="w-auto h-auto max-h-[160px] md:max-h-[350px] max-w-full object-contain shadow-2xl rounded-sm"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.4 }}
+                      />
+                      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(0,0,0,0.08)]" />
+                    </motion.div>
+
+                    {/* Content Side - Right Page */}
+                    <motion.div 
+                      className="p-6 md:p-8 flex flex-col overflow-y-auto bg-background"
+                      initial={{ x: 50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.4 }}
+                    >
+                      {/* Page texture */}
+                      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
+                      
+                      <div className="mb-4">
+                        <motion.h2 
+                          className="text-2xl md:text-3xl font-serif font-bold text-primary mb-1"
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          {book.title}
+                        </motion.h2>
+                        <motion.p 
+                          className="text-base text-muted-foreground font-medium"
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.45 }}
+                        >
+                          by {book.author}
+                        </motion.p>
+                      </div>
+                      
+                      <div className="space-y-4 flex-grow">
+                        <motion.div
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.5 }}
+                        >
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Synopsis</h4>
+                          <p className="text-sm leading-relaxed text-foreground/80 line-clamp-4">
+                            {book.description}
+                          </p>
+                          {isLongDescription && (
+                            <button
+                              onClick={handleShowMore}
+                              className="mt-2 text-xs font-medium text-secondary hover:text-secondary/80 flex items-center gap-1 transition-colors"
+                            >
+                              Show more <ChevronDown className="w-3 h-3" />
+                            </button>
+                          )}
+                        </motion.div>
+                        
+                        <motion.div 
+                          className="bg-secondary/5 p-4 rounded-sm border border-secondary/10"
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.55 }}
+                        >
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-secondary mb-2">Review</h4>
+                          <p className="italic text-sm text-foreground/90 mb-3 line-clamp-3">"{book.review}"</p>
+                          <div className="flex items-center gap-2">
+                             <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating) ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
+                              ))}
+                             </div>
+                             <span className="text-sm font-mono text-muted-foreground">{book.rating}/5.0</span>
+                          </div>
+                        </motion.div>
+                      </div>
+
+                      <motion.div 
+                        className="mt-6 pt-4 border-t border-border"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-serif rounded-sm">
+                          Purchase Copy
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

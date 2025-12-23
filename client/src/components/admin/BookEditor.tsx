@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Star, Loader2, Book as BookIcon, Save } from "lucide-react";
+import { Search, Star, Loader2, Book as BookIcon, Save, Upload, ImagePlus, Link, X, Edit3, Trash2 } from "lucide-react";
 import { Book } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,13 +24,20 @@ interface GoogleBookVolume {
 interface BookEditorProps {
   initialBooks: Book[];
   onSave: (newBook: Book) => void;
+  onUpdate?: (updatedBook: Book) => void;
+  onDelete?: (bookId: string) => void;
 }
 
-export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
+export default function BookEditor({ initialBooks, onSave, onUpdate, onDelete }: BookEditorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<GoogleBookVolume[]>([]);
   const [selectedBook, setSelectedBook] = useState<Partial<Book> | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [customCover, setCustomCover] = useState<string | null>(null);
+  const [coverUrlInput, setCoverUrlInput] = useState("");
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<Book>({
@@ -43,11 +50,28 @@ export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
 
   const rating = watch("rating");
 
+  // Populate form when editing existing book
+  useEffect(() => {
+    if (editingBook) {
+      setValue("id", editingBook.id);
+      setValue("title", editingBook.title);
+      setValue("author", editingBook.author);
+      setValue("description", editingBook.description);
+      setValue("synopsis", editingBook.synopsis);
+      setValue("cover", editingBook.cover);
+      setValue("rating", editingBook.rating);
+      setValue("review", editingBook.review);
+      setValue("link", editingBook.link);
+      setValue("color", editingBook.color);
+      setCustomCover(null);
+    }
+  }, [editingBook, setValue]);
+
   const searchBooks = async () => {
     if (!searchQuery) return;
     setIsSearching(true);
     try {
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
       setSearchResults(data.items || []);
     } catch (error) {
@@ -71,6 +95,7 @@ export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
     };
     
     setSelectedBook(bookData);
+    setEditingBook(null);
     setValue("title", bookData.title);
     setValue("author", bookData.author);
     setValue("description", bookData.description);
@@ -78,19 +103,89 @@ export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
     setValue("cover", bookData.cover);
     setValue("id", crypto.randomUUID());
     
-    setSearchResults([]); // Clear search results to show form
+    setSearchResults([]);
+  };
+
+  const handleEditBook = (book: Book) => {
+    setEditingBook(book);
+    setSelectedBook(null);
+    setSearchResults([]);
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setCustomCover(base64);
+        setValue("cover", base64);
+        if (selectedBook) {
+          setSelectedBook(prev => prev ? { ...prev, cover: base64 } : prev);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverUrl = () => {
+    if (coverUrlInput) {
+      setCustomCover(coverUrlInput);
+      setValue("cover", coverUrlInput);
+      if (selectedBook) {
+        setSelectedBook(prev => prev ? { ...prev, cover: coverUrlInput } : prev);
+      }
+      setCoverUrlInput("");
+      setShowUrlInput(false);
+      toast({
+        title: "Cover Updated",
+        description: "Cover image URL has been applied.",
+      });
+    }
   };
 
   const onSubmit = (data: Book) => {
-    onSave(data);
-    toast({
-      title: "Book Saved",
-      description: `${data.title} has been added to your bookshelf.`,
-    });
+    if (editingBook && onUpdate) {
+      onUpdate(data);
+      toast({
+        title: "Book Updated",
+        description: `${data.title} has been updated.`,
+      });
+    } else {
+      onSave(data);
+      toast({
+        title: "Book Saved",
+        description: `${data.title} has been added to your bookshelf.`,
+      });
+    }
     setSelectedBook(null);
+    setEditingBook(null);
+    setCustomCover(null);
     reset();
     setSearchQuery("");
   };
+
+  const handleDelete = () => {
+    if (editingBook && onDelete) {
+      onDelete(editingBook.id);
+      toast({
+        title: "Book Deleted",
+        description: `${editingBook.title} has been removed from your bookshelf.`,
+      });
+      setEditingBook(null);
+      reset();
+    }
+  };
+
+  const cancelEdit = () => {
+    setSelectedBook(null);
+    setEditingBook(null);
+    setCustomCover(null);
+    setShowUrlInput(false);
+    reset();
+  };
+
+  const currentCover = customCover || (editingBook?.cover) || (selectedBook?.cover);
 
   return (
     <div className="space-y-6">
@@ -139,16 +234,114 @@ export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
         </div>
       )}
 
-      {/* Editor Form */}
-      {selectedBook && (
+      {/* Existing Books Shelf - Click to Edit */}
+      {!selectedBook && !editingBook && initialBooks.length > 0 && (
+        <div className="border rounded-lg p-4 bg-muted/10">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
+            Your Books (Click to Edit)
+          </h3>
+          <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+            {initialBooks.map((book) => (
+              <div 
+                key={book.id} 
+                className="relative aspect-[2/3] bg-muted rounded-sm overflow-hidden cursor-pointer group"
+                onClick={() => handleEditBook(book)}
+              >
+                <img 
+                  src={book.cover} 
+                  alt={book.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
+                  <Edit3 className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Editor Form - For New or Editing */}
+      {(selectedBook || editingBook) && (
         <Card className="animate-in fade-in slide-in-from-bottom-4">
           <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                {editingBook ? "Edit Book" : "Add New Book"}
+              </h3>
+              <button onClick={cancelEdit} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="flex gap-6">
-                <div className="w-32 shrink-0">
-                  <div className="aspect-[2/3] rounded-md overflow-hidden border border-border shadow-sm bg-muted">
-                     {selectedBook.cover && <img src={selectedBook.cover} alt="Cover" className="w-full h-full object-cover" />}
+                <div className="w-32 shrink-0 space-y-2">
+                  <div className="aspect-[2/3] rounded-md overflow-hidden border border-border shadow-sm bg-muted relative group">
+                     {currentCover ? (
+                       <img src={currentCover} alt="Cover" className="w-full h-full object-cover" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                         <BookIcon className="w-8 h-8" />
+                       </div>
+                     )}
+                     {/* Upload overlay */}
+                     <div 
+                       className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                       onClick={() => fileInputRef.current?.click()}
+                     >
+                       <Upload className="w-6 h-6 text-white mb-1" />
+                       <span className="text-white text-xs">Upload Cover</span>
+                     </div>
                   </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                    className="hidden"
+                  />
+                  <div className="flex gap-1">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 text-xs px-2"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ImagePlus className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant={showUrlInput ? "secondary" : "outline"}
+                      size="sm" 
+                      className="flex-1 text-xs px-2"
+                      onClick={() => setShowUrlInput(!showUrlInput)}
+                    >
+                      <Link className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  
+                  {/* URL Input */}
+                  {showUrlInput && (
+                    <div className="space-y-1">
+                      <Input 
+                        placeholder="Image URL..." 
+                        value={coverUrlInput}
+                        onChange={(e) => setCoverUrlInput(e.target.value)}
+                        className="text-xs h-8"
+                      />
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        className="w-full text-xs h-7"
+                        onClick={handleCoverUrl}
+                        disabled={!coverUrlInput}
+                      >
+                        Apply URL
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 space-y-4">
                   <div>
@@ -202,11 +395,20 @@ export default function BookEditor({ initialBooks, onSave }: BookEditorProps) {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="ghost" onClick={() => setSelectedBook(null)}>Cancel</Button>
-                <Button type="submit" className="gap-2">
-                  <Save className="w-4 h-4" /> Save to Bookshelf
-                </Button>
+              <div className="flex justify-between items-center pt-4">
+                <div>
+                  {editingBook && onDelete && (
+                    <Button type="button" variant="destructive" size="sm" onClick={handleDelete} className="gap-1">
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" onClick={cancelEdit}>Cancel</Button>
+                  <Button type="submit" className="gap-2">
+                    <Save className="w-4 h-4" /> {editingBook ? "Update Book" : "Save to Bookshelf"}
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>

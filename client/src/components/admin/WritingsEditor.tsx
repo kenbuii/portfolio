@@ -1,12 +1,11 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, FileText, Eye } from "lucide-react";
+import { Save, FileText, Eye, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import RichTextEditor from "./RichTextEditor";
 
 interface Writing {
   id: number;
@@ -24,18 +23,34 @@ interface WritingsEditorProps {
 export default function WritingsEditor({ onSave }: WritingsEditorProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = () => {
-    if (!title || !content) return;
+  // Strip HTML for excerpt and word count
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
 
+  const handleSave = () => {
+    if (!title || !content) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please provide both a title and content.",
+      });
+      return;
+    }
+
+    const plainText = stripHtml(content);
     const newPost: Writing = {
       id: Date.now(),
       title,
       content,
       date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-      excerpt: content.substring(0, 100) + "...",
-      readTime: `${Math.ceil(content.split(" ").length / 200)} min read`
+      excerpt: plainText.substring(0, 100) + "...",
+      readTime: `${Math.ceil(plainText.split(" ").length / 200)} min read`
     };
 
     onSave(newPost);
@@ -47,6 +62,54 @@ export default function WritingsEditor({ onSave }: WritingsEditorProps) {
     // Reset
     setTitle("");
     setContent("");
+  };
+
+  const handleSyncToSupabase = async () => {
+    if (!title || !content) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please provide both a title and content before syncing.",
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    
+    try {
+      const plainText = stripHtml(content);
+      const response = await fetch("/api/writings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: Date.now().toString(),
+          title,
+          content,
+          excerpt: plainText.substring(0, 100) + "...",
+          readTime: `${Math.ceil(plainText.split(" ").length / 200)} min read`
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to sync");
+      }
+      
+      toast({
+        title: "Synced to Cloud",
+        description: "Your writing has been saved to Supabase.",
+      });
+
+      // Also save locally
+      handleSave();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sync Failed",
+        description: "Could not sync to Supabase. Check your connection.",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -71,20 +134,24 @@ export default function WritingsEditor({ onSave }: WritingsEditorProps) {
           </div>
           
           <TabsContent value="write" className="mt-0">
-             <Textarea 
-                value={content} 
-                onChange={(e) => setContent(e.target.value)} 
-                placeholder="Write your story in Markdown..."
-                className="min-h-[400px] font-mono text-sm leading-relaxed p-6 resize-y"
-             />
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
+              placeholder="Write your story..."
+              className="min-h-[400px]"
+            />
           </TabsContent>
           
           <TabsContent value="preview" className="mt-0">
              <Card className="min-h-[400px] bg-card">
                 <CardContent className="p-8 prose prose-neutral dark:prose-invert max-w-none">
-                   <h1 className="mb-8">{title || "Untitled Post"}</h1>
+                   <h1 className="mb-4 text-3xl font-serif font-bold">{title || "Untitled Post"}</h1>
+                   <div className="text-sm text-muted-foreground mb-8">
+                     {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                     {content && ` · ${Math.ceil(stripHtml(content).split(" ").length / 200)} min read`}
+                   </div>
                    {content ? (
-                      <ReactMarkdown>{content}</ReactMarkdown>
+                      <div dangerouslySetInnerHTML={{ __html: content }} />
                    ) : (
                       <p className="text-muted-foreground italic">Nothing to preview yet...</p>
                    )}
@@ -93,7 +160,15 @@ export default function WritingsEditor({ onSave }: WritingsEditorProps) {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end gap-2 pt-4">
+           <Button 
+             variant="outline" 
+             onClick={handleSyncToSupabase} 
+             disabled={isSyncing}
+             className="gap-2"
+           >
+              <Cloud className="w-4 h-4" /> {isSyncing ? "Syncing..." : "Sync to Cloud"}
+           </Button>
            <Button onClick={handleSave} className="gap-2">
               <Save className="w-4 h-4" /> Publish Writing
            </Button>

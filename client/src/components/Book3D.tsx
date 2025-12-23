@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Book } from "@/lib/data";
-import { Star } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Star, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface Book3DProps {
   book: Book;
@@ -10,12 +11,37 @@ interface Book3DProps {
 
 export default function Book3D({ book }: Book3DProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [, navigate] = useLocation();
+  const bookRef = useRef<HTMLDivElement>(null);
+
+  const handleOpen = () => {
+    setIsAnimating(true);
+    setIsOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsAnimating(false);
+    }, 400);
+  };
+
+  const handleShowMore = () => {
+    setIsOpen(false);
+    navigate(`/book/${book.id}`);
+  };
+
+  // Check if description is long - always truncate in modal
+  const isLongDescription = book.description.length > 200;
 
   return (
     <>
       <div 
+        ref={bookRef}
         className="group relative w-[130px] h-[195px] cursor-pointer perspective-1000"
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         data-testid={`book-css-${book.id}`}
       >
         <div className="w-full h-full relative preserve-3d transition-transform duration-500 ease-out group-hover:rotate-y-[-15deg] group-hover:rotate-x-[5deg] group-hover:translate-z-[20px]">
@@ -53,46 +79,111 @@ export default function Book3D({ book }: Book3DProps) {
         </div>
       </div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-none shadow-2xl sm:rounded-lg">
-          <div className="grid md:grid-cols-2 h-full">
-             <div className="h-[300px] md:h-full relative bg-neutral-100 p-8 flex items-center justify-center">
-                <img src={book.cover} alt={book.title} className="max-h-full max-w-full shadow-2xl" />
-             </div>
-             <div className="p-8 md:p-12 flex flex-col h-full overflow-y-auto">
-                <DialogHeader className="mb-6">
-                  <DialogTitle className="text-3xl md:text-4xl font-serif font-bold text-primary mb-2">{book.title}</DialogTitle>
-                  <DialogDescription className="text-lg text-muted-foreground font-medium">by {book.author}</DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-6 flex-grow">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Synopsis</h4>
-                    <p className="leading-relaxed text-foreground/80">{book.description}</p>
-                  </div>
-                  
-                  <div className="bg-secondary/5 p-4 rounded-sm border border-secondary/10">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-secondary mb-2">Review</h4>
-                    <p className="italic text-foreground/90 mb-3">"{book.review}"</p>
-                    <div className="flex items-center gap-2">
-                       <div className="flex gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating) ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
-                        ))}
-                       </div>
-                    </div>
-                  </div>
+      {/* Custom Modal with CSS Page-Turn Animation - Rendered via Portal */}
+      {isOpen && createPortal(
+        <>
+          {/* Backdrop - Higher z-index */}
+          <div
+            className={`fixed inset-0 bg-black/80 backdrop-blur-md z-[100] transition-opacity duration-300 ${
+              isAnimating && !isOpen ? "opacity-0" : "opacity-100"
+            }`}
+            onClick={handleClose}
+          />
+
+          {/* Book Modal */}
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 md:p-8 pointer-events-none">
+            <div
+              className={`relative w-full max-w-3xl max-h-[85vh] bg-background rounded-lg shadow-2xl overflow-hidden pointer-events-auto transform transition-all duration-500 ease-out ${
+                isAnimating && !isOpen
+                  ? "scale-50 rotate-y-90 opacity-0"
+                  : "scale-100 rotate-y-0 opacity-100"
+              }`}
+              style={{
+                perspective: "1000px",
+                transformStyle: "preserve-3d",
+                animation: isOpen && isAnimating ? "bookOpen 0.5s ease-out forwards" : undefined,
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background/90 hover:bg-background shadow-lg transition-colors border border-border"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="grid md:grid-cols-[280px_1fr] h-full max-h-[85vh]">
+                {/* Book Cover Side */}
+                <div className="h-[200px] md:h-auto relative bg-neutral-100 p-6 flex items-center justify-center">
+                  <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/10 to-transparent" />
+                  <img 
+                    src={book.cover} 
+                    alt={book.title} 
+                    className="w-auto h-auto max-h-[160px] md:max-h-[350px] max-w-full object-contain shadow-2xl rounded-sm" 
+                  />
+                  <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(0,0,0,0.08)]"></div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-border">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-serif rounded-sm">
-                    Purchase Copy
-                  </Button>
+                {/* Content Side */}
+                <div className="p-6 md:p-8 flex flex-col overflow-y-auto">
+                  <div className="mb-4">
+                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary mb-1">{book.title}</h2>
+                    <p className="text-base text-muted-foreground font-medium">by {book.author}</p>
+                  </div>
+                  
+                  <div className="space-y-4 flex-grow">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Synopsis</h4>
+                      <p className="text-sm leading-relaxed text-foreground/80 line-clamp-4">{book.description}</p>
+                      {isLongDescription && (
+                        <button
+                          onClick={handleShowMore}
+                          className="mt-2 text-xs font-medium text-secondary hover:text-secondary/80 flex items-center gap-1 transition-colors"
+                        >
+                          Show more <ChevronDown className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="bg-secondary/5 p-4 rounded-sm border border-secondary/10">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-secondary mb-2">Review</h4>
+                      <p className="italic text-sm text-foreground/90 mb-3 line-clamp-3">"{book.review}"</p>
+                      <div className="flex items-center gap-2">
+                         <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < Math.floor(book.rating) ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
+                          ))}
+                         </div>
+                         <span className="text-sm font-mono text-muted-foreground">{book.rating}/5.0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-border">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-serif rounded-sm">
+                      Purchase Copy
+                    </Button>
+                  </div>
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <style>{`
+            @keyframes bookOpen {
+              0% {
+                transform: scale(0.3) rotateY(-90deg);
+                opacity: 0;
+              }
+              100% {
+                transform: scale(1) rotateY(0deg);
+                opacity: 1;
+              }
+            }
+          `}</style>
+        </>,
+        document.body
+      )}
     </>
   );
 }

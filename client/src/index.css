@@ -1,3 +1,44 @@
+/* ==============================================
+   LOCAL FONTS (@font-face)
+   Place your font files in: client/public/fonts/
+   ============================================== */
+
+/* Century Gothic - Body Text (TTF) */
+@font-face {
+  font-family: "Century Gothic";
+  src: url("/fonts/centurygothic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Century Gothic";
+  src: url("/fonts/centurygothic_bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Clarendon - Titles (OTF) */
+@font-face {
+  font-family: "Clarendon";
+  src: url("/fonts/Clarendon Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Clarendon";
+  src: url("/fonts/Clarendon Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================== */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -41,8 +82,29 @@
 
   --radius: 0.25rem;
 
-  --font-sans: "DM Sans", sans-serif;
-  --font-serif: "Playfair Display", serif;
+  /* ==============================================
+     FONT FAMILIES
+     Mix and match Google Fonts with local fonts.
+     
+     Google Fonts (loaded via index.html):
+       - "DM Sans"
+       - "Playfair Display"
+     
+     Local Fonts (loaded via @font-face above):
+       - "My Local Sans"
+       - "My Local Serif"  
+       - "My Local Display"
+     
+     To use a local font, uncomment its @font-face
+     rule above, then reference it here.
+     ============================================== */
+  
+  /* Primary sans-serif font (body text) */
+  /* Body text: Century Gothic */
+  --font-sans: "Century Gothic", "Avant Garde", sans-serif;
+
+  /* Titles: Clarendon */
+  --font-serif: "Clarendon", "Rockwell", Georgia, serif;
 }
 
 @layer base {
@@ -83,4 +145,35 @@
 
 .backface-hidden {
   backface-visibility: hidden;
+}
+
+/* Rich Text Editor & Prose Paragraph Spacing */
+.prose p {
+  margin-bottom: 1em;
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}
+.prose h1, .prose h2, .prose h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.prose h1:first-child, .prose h2:first-child, .prose h3:first-child {
+  margin-top: 0;
+}
+
+/* Link Styling - No blue, inherit text color */
+a {
+  color: inherit;
+  text-decoration: underline;
+}
+a:visited {
+  color: #D9C0D3;
+}
+/* Override for navigation links that shouldn't be underlined */
+nav a, .no-underline {
+  text-decoration: none;
+}
+nav a:visited {
+  color: inherit;
 }
