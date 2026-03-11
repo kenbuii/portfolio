@@ -3,10 +3,10 @@ import Layout from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Lock, BookOpen, PenTool, User, Cloud, Info, GripVertical, Trash2, CloudUpload, CloudDownload, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Lock, BookOpen, Sparkles, User, Cloud, Info, GripVertical, Trash2, CloudUpload, CloudDownload, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BookEditor from "@/components/admin/BookEditor";
-import WritingsEditor from "@/components/admin/WritingsEditor";
+import InspirationsEditor from "@/components/admin/InspirationsEditor";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import AboutEditor from "@/components/admin/AboutEditor";
 import { books as initialBooks, Book, STORAGE_KEYS, getStoredProfile, getStoredAbout } from "@/lib/data";
@@ -28,7 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type TabType = "profile" | "about" | "books" | "writings";
+type TabType = "profile" | "about" | "books" | "inspirations";
 
 // Sortable Book Item Component
 function SortableBookItem({ book, onDelete }: { book: Book; onDelete: (id: string) => void }) {
@@ -135,13 +135,6 @@ export default function Admin() {
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(updatedBooks));
   };
 
-  const handleSaveWriting = (post: any) => {
-    // Save to localStorage
-    const savedWritings = localStorage.getItem(STORAGE_KEYS.WRITINGS);
-    const writings = savedWritings ? JSON.parse(savedWritings) : [];
-    writings.unshift(post);
-    localStorage.setItem(STORAGE_KEYS.WRITINGS, JSON.stringify(writings));
-  };
 
   const handleSyncBooksToSupabase = async () => {
     try {
@@ -170,7 +163,7 @@ export default function Admin() {
   const handleSyncAllToCloud = async () => {
     setIsSyncingAll(true);
     
-    const results = { profile: false, about: false, books: false, writings: false };
+    const results = { profile: false, about: false, books: false, inspirations: false };
     
     try {
       // Sync Profile
@@ -211,17 +204,17 @@ export default function Admin() {
     }
 
     try {
-      // Sync Writings
-      const savedWritings = localStorage.getItem(STORAGE_KEYS.WRITINGS);
-      const writings = savedWritings ? JSON.parse(savedWritings) : [];
-      const writingsRes = await fetch("/api/writings", {
+      // Sync Inspirations
+      const savedInspirations = localStorage.getItem("portfolio_inspirations");
+      const inspirations = savedInspirations ? JSON.parse(savedInspirations) : [];
+      const inspirationsRes = await fetch("/api/inspirations", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(writings),
+        body: JSON.stringify(inspirations),
       });
-      results.writings = writingsRes.ok;
+      results.inspirations = inspirationsRes.ok;
     } catch {
-      results.writings = false;
+      results.inspirations = false;
     }
 
     setIsSyncingAll(false);
@@ -232,7 +225,7 @@ export default function Admin() {
       setCloudStatus("connected");
       toast({
         title: "All Data Synced!",
-        description: "Profile, About, Books, and Writings have been saved to the cloud.",
+        description: "Profile, About, Books, and Inspirations have been saved to the cloud.",
       });
     } else if (successCount > 0) {
       setCloudStatus("connected");
@@ -254,7 +247,7 @@ export default function Admin() {
   const handleLoadFromCloud = async () => {
     setIsLoadingFromCloud(true);
     
-    const results = { profile: false, about: false, books: false, writings: false };
+    const results = { profile: false, about: false, books: false, inspirations: false };
     
     try {
       // Load Profile
@@ -304,17 +297,18 @@ export default function Admin() {
     }
 
     try {
-      // Load Writings
-      const writingsRes = await fetch("/api/writings");
-      if (writingsRes.ok) {
-        const writingsData = await writingsRes.json();
-        if (writingsData && writingsData.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.WRITINGS, JSON.stringify(writingsData));
-          results.writings = true;
+      // Load Inspirations
+      const inspirationsRes = await fetch("/api/inspirations");
+      if (inspirationsRes.ok) {
+        const inspirationsData = await inspirationsRes.json();
+        if (inspirationsData && inspirationsData.length > 0) {
+          localStorage.setItem("portfolio_inspirations", JSON.stringify(inspirationsData));
+          window.dispatchEvent(new Event("inspirations-updated"));
+          results.inspirations = true;
         }
       }
     } catch {
-      results.writings = false;
+      results.inspirations = false;
     }
 
     setIsLoadingFromCloud(false);
@@ -407,12 +401,12 @@ export default function Admin() {
                     <BookOpen className="w-4 h-4" /> Bookshelf
                   </Button>
                   <Button 
-                    variant={activeTab === "writings" ? "default" : "outline"}
-                    onClick={() => setActiveTab("writings")}
+                    variant={activeTab === "inspirations" ? "default" : "outline"}
+                    onClick={() => setActiveTab("inspirations")}
                     className="gap-2"
                     size="sm"
                   >
-                    <PenTool className="w-4 h-4" /> Writings
+                    <Sparkles className="w-4 h-4" /> Inspirations
                   </Button>
                   <Button 
                     variant="outline" 
@@ -505,14 +499,14 @@ export default function Admin() {
                  </Card>
                )}
                
-               {activeTab === "writings" && (
+               {activeTab === "inspirations" && (
                  <Card className="border-primary/10 shadow-lg">
                     <CardHeader className="bg-muted/20 border-b border-border/40">
-                       <CardTitle>New Writing</CardTitle>
-                       <CardDescription>Compose a new article using Markdown.</CardDescription>
+                       <CardTitle>Inspirations</CardTitle>
+                       <CardDescription>Curate poems, essays, and art that inspire you.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6">
-                       <WritingsEditor onSave={handleSaveWriting} />
+                       <InspirationsEditor />
                     </CardContent>
                  </Card>
                )}

@@ -153,83 +153,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Writings endpoints
-  app.get("/api/writings", async (req, res) => {
-    const supabase = await getSupabaseClient();
-    
-    if (!supabase) {
-      return res.status(503).json({ error: "Supabase not configured" });
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from("writings")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      res.json(data);
-    } catch (error) {
-      console.error("Failed to fetch writings:", error);
-      res.status(500).json({ error: "Failed to fetch writings" });
-    }
-  });
-
-  app.post("/api/writings", async (req, res) => {
-    const supabase = await getSupabaseClient();
-    
-    if (!supabase) {
-      return res.status(503).json({ error: "Supabase not configured" });
-    }
-    
-    try {
-      const writing = req.body;
-      
-      const { data, error } = await supabase
-        .from("writings")
-        .insert({
-          ...writing,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      res.json(data);
-    } catch (error) {
-      console.error("Failed to save writing:", error);
-      res.status(500).json({ error: "Failed to save writing" });
-    }
-  });
-
-  app.put("/api/writings", async (req, res) => {
-    const supabase = await getSupabaseClient();
-    
-    if (!supabase) {
-      return res.status(503).json({ error: "Supabase not configured" });
-    }
-    
-    try {
-      const writings = req.body;
-      
-      const { data, error } = await supabase
-        .from("writings")
-        .upsert(
-          writings.map((writing: any) => ({
-            ...writing,
-            updated_at: new Date().toISOString(),
-          }))
-        )
-        .select();
-      
-      if (error) throw error;
-      res.json(data);
-    } catch (error) {
-      console.error("Failed to save writings:", error);
-      res.status(500).json({ error: "Failed to save writings" });
-    }
-  });
-
   // About endpoints
   app.get("/api/about", async (req, res) => {
     const supabase = await getSupabaseClient();
@@ -279,6 +202,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to save about:", error);
       res.status(500).json({ error: "Failed to save about" });
+    }
+  });
+
+  // Inspirations endpoints
+  app.get("/api/inspirations", async (req, res) => {
+    const supabase = await getSupabaseClient();
+    
+    if (!supabase) {
+      return res.status(503).json({ error: "Supabase not configured" });
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from("inspirations")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error("Failed to fetch inspirations:", error);
+      res.status(500).json({ error: "Failed to fetch inspirations" });
+    }
+  });
+
+  app.post("/api/inspirations", async (req, res) => {
+    const supabase = await getSupabaseClient();
+    
+    if (!supabase) {
+      return res.status(503).json({ error: "Supabase not configured" });
+    }
+    
+    try {
+      const inspiration = req.body;
+      
+      const { data, error } = await supabase
+        .from("inspirations")
+        .insert({
+          ...inspiration,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error("Failed to save inspiration:", error);
+      res.status(500).json({ error: "Failed to save inspiration" });
+    }
+  });
+
+  app.put("/api/inspirations", async (req, res) => {
+    const supabase = await getSupabaseClient();
+    
+    if (!supabase) {
+      return res.status(503).json({ error: "Supabase not configured" });
+    }
+    
+    try {
+      const inspirations = req.body;
+      
+      const { data, error } = await supabase
+        .from("inspirations")
+        .upsert(
+          inspirations.map((item: any) => ({
+            ...item,
+            updated_at: new Date().toISOString(),
+          }))
+        )
+        .select();
+      
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error("Failed to save inspirations:", error);
+      res.status(500).json({ error: "Failed to save inspirations" });
+    }
+  });
+
+  app.delete("/api/inspirations/:id", async (req, res) => {
+    const supabase = await getSupabaseClient();
+    
+    if (!supabase) {
+      return res.status(503).json({ error: "Supabase not configured" });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      const { error } = await supabase
+        .from("inspirations")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete inspiration:", error);
+      res.status(500).json({ error: "Failed to delete inspiration" });
     }
   });
 

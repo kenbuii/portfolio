@@ -8,7 +8,7 @@ import Home from "@/pages/Home";
 import About from "@/pages/About";
 import BookshelfPage from "@/pages/BookshelfPage";
 import BookDetail from "@/pages/BookDetail";
-import Writings from "@/pages/Writings";
+import Inspirations from "@/pages/Inspirations";
 import Admin from "@/pages/Admin";
 
 function Router() {
@@ -18,7 +18,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/bookshelf" component={BookshelfPage} />
       <Route path="/book/:id" component={BookDetail} />
-      <Route path="/writings" component={Writings} />
+      <Route path="/inspirations" component={Inspirations} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
