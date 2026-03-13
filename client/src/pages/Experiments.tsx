@@ -7,9 +7,10 @@ import AnimationsTab from "@/components/experiments/AnimationsTab";
 import LayoutTab from "@/components/experiments/LayoutTab";
 import HierarchyTab from "@/components/experiments/HierarchyTab";
 import ThemePlayground from "@/components/experiments/ThemePlayground";
-import { Palette, Type, Sparkles, LayoutGrid, Layers, PenTool } from "lucide-react";
+import TextureTab from "@/components/experiments/TextureTab";
+import { Palette, Type, Sparkles, LayoutGrid, Layers, PenTool, Fingerprint } from "lucide-react";
 
-type TabType = "theme" | "animations" | "typography" | "layout" | "color" | "hierarchy";
+type TabType = "theme" | "animations" | "typography" | "layout" | "color" | "hierarchy" | "texture";
 
 interface Tab {
   id: TabType;
@@ -25,6 +26,7 @@ const tabs: Tab[] = [
   { id: "animations", label: "Animations", icon: Sparkles, available: true },
   { id: "layout", label: "Layout", icon: LayoutGrid, available: true },
   { id: "hierarchy", label: "Hierarchy", icon: Layers, available: true },
+  { id: "texture", label: "Texture", icon: Fingerprint, available: true },
 ];
 
 export default function Experiments() {
@@ -80,6 +82,7 @@ export default function Experiments() {
             {activeTab === "animations" && <AnimationsTab />}
             {activeTab === "layout" && <LayoutTab />}
             {activeTab === "hierarchy" && <HierarchyTab />}
+            {activeTab === "texture" && <TextureTab />}
           </div>
         </div>
       </section>

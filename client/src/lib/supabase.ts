@@ -176,12 +176,22 @@ export async function saveAboutToCloud(about: About): Promise<About> {
 
 export async function fetchBooks(): Promise<Book[]> {
   if (useDirectSupabase()) {
-    const { data, error } = await supabase!
+    // Try sort_order first; fall back to created_at if column doesn't exist yet
+    let { data, error } = await supabase!
       .from("books")
       .select("*")
       .order("sort_order", { ascending: true, nullsFirst: false });
-    if (error) throw error;
-    return data as Book[];
+
+    if (error) {
+      const fallback = await supabase!
+        .from("books")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (fallback.error) throw fallback.error;
+      data = fallback.data;
+    }
+
+    return (data ?? []) as Book[];
   }
   return apiFetch<Book[]>("/api/books");
 }
@@ -191,11 +201,11 @@ export async function saveBooksToCloud(books: Book[]): Promise<Book[]> {
     const { data, error } = await supabase!
       .from("books")
       .upsert(
-        books.map((book, index) => ({
-          ...book,
-          sort_order: index,
-          updated_at: new Date().toISOString(),
-        }))
+        books.map((book, index) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { sort_order: _so, ...rest } = book as any;
+          return { ...rest, sort_order: index, updated_at: new Date().toISOString() };
+        })
       )
       .select();
     if (error) throw error;
