@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import { getStoredProfile, Profile, defaultProfile } from "@/lib/data";
+import { fetchProfile } from "@/lib/supabase";
 
 export default function Hero() {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
 
   useEffect(() => {
     setProfile(getStoredProfile());
+
+    fetchProfile()
+      .then((data) => {
+        if (data?.name) setProfile(data);
+      })
+      .catch(() => {});
     
-    // Listen for profile updates from admin
     const handleStorageChange = () => {
       setProfile(getStoredProfile());
     };

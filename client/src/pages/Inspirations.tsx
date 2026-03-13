@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import { Inspiration } from "@/lib/supabase";
+import { Inspiration, fetchInspirations } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { X, Quote, Palette, FileText, MessageSquareQuote, ExternalLink } from "lucide-react";
 
@@ -347,21 +347,23 @@ export default function Inspirations() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
   
-  // Load from localStorage or API
   useEffect(() => {
     const saved = localStorage.getItem("portfolio_inspirations");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.length > 0) {
-          setInspirations(parsed);
-        }
+        if (parsed.length > 0) setInspirations(parsed);
       } catch (e) {
         console.error("Failed to parse saved inspirations");
       }
     }
+
+    fetchInspirations()
+      .then((data) => {
+        if (data?.length > 0) setInspirations(data);
+      })
+      .catch(() => {});
     
-    // Listen for updates from admin
     const handleUpdate = () => {
       const updated = localStorage.getItem("portfolio_inspirations");
       if (updated) {

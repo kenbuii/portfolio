@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { getStoredAbout, About as AboutType, defaultAbout } from "@/lib/data";
+import { fetchAbout } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 type LayoutVariant = "classic" | "split" | "cards" | "brutalist";
@@ -18,8 +19,13 @@ export default function About() {
 
   useEffect(() => {
     setAbout(getStoredAbout());
+
+    fetchAbout()
+      .then((data) => {
+        if (data?.content) setAbout(data);
+      })
+      .catch(() => {});
     
-    // Load saved layout preference
     const savedLayout = localStorage.getItem("about_layout");
     if (savedLayout && (savedLayout as LayoutVariant) in layoutLabels) {
       setLayout(savedLayout as LayoutVariant);
