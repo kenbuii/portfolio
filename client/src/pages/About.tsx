@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { getStoredAbout, About as AboutType, defaultAbout } from "@/lib/data";
 import { fetchAbout } from "@/lib/supabase";
+import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 import { cn } from "@/lib/utils";
 
 type LayoutVariant = "classic" | "split" | "cards" | "brutalist";
@@ -16,22 +17,23 @@ const layoutLabels: Record<LayoutVariant, string> = {
 export default function About() {
   const [about, setAbout] = useState<AboutType>(defaultAbout);
   const [layout, setLayout] = useState<LayoutVariant>("classic");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setAbout(getStoredAbout());
-
     fetchAbout()
       .then((data) => {
         if (data?.content) setAbout(data);
       })
-      .catch(() => {});
-    
+      .catch(() => {
+        setAbout(getStoredAbout());
+      })
+      .finally(() => setLoading(false));
+
     const savedLayout = localStorage.getItem("about_layout");
     if (savedLayout && (savedLayout as LayoutVariant) in layoutLabels) {
       setLayout(savedLayout as LayoutVariant);
     }
     
-    // Listen for about updates from admin
     const handleStorageChange = () => {
       setAbout(getStoredAbout());
     };
@@ -49,6 +51,14 @@ export default function About() {
     setLayout(newLayout);
     localStorage.setItem("about_layout", newLayout);
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <LoadingScreen variant="suprematist" duration={1500} />
+      </Layout>
+    );
+  }
 
   // Parse content to separate list items from main bio
   const { bioContent, listContent } = useMemo(() => {
@@ -86,8 +96,10 @@ export default function About() {
 
   const contentStyles = "[&_p]:my-4 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-2 [&_li]:leading-relaxed [&_strong]:font-bold [&_em]:italic [&_h1]:text-3xl [&_h1]:font-serif [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h2]:text-2xl [&_h2]:font-serif [&_h2]:font-bold [&_h2]:mt-5 [&_h2]:mb-3 [&_h3]:text-xl [&_h3]:font-serif [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2";
 
-  // Layout selector component
-  const LayoutSelector = () => (
+  // Layout selector only shown when admin is logged in (via localStorage flag)
+  const isAdmin = localStorage.getItem("portfolio_admin_logged_in") === "true";
+
+  const LayoutSelector = () => isAdmin ? (
     <div className="fixed bottom-6 right-6 z-40 flex items-center gap-1 bg-card/90 backdrop-blur-sm p-1.5 rounded-lg border border-border/50 shadow-lg">
       {(Object.keys(layoutLabels) as LayoutVariant[]).map((variant) => (
         <button
@@ -104,7 +116,7 @@ export default function About() {
         </button>
       ))}
     </div>
-  );
+  ) : null;
 
   // Classic Layout (original)
   const ClassicLayout = () => (

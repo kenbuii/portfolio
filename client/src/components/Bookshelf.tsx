@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { books as defaultBooks, Book, STORAGE_KEYS } from "@/lib/data";
 import { fetchBooks } from "@/lib/supabase";
+import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 import BookMotion from "./BookMotion";
 import Book3D from "./Book3D";
 import { Switch } from "@/components/ui/switch";
@@ -108,24 +109,30 @@ function BookTextItem({ book }: { book: Book }) {
 export default function Bookshelf() {
   const [mode, setMode] = useState<ViewMode>("visual");
   const [allBooks, setAllBooks] = useState<Book[]>(defaultBooks);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
-    if (savedBooks) {
-      try {
-        const parsed = JSON.parse(savedBooks);
-        if (parsed.length > 0) setAllBooks(parsed);
-      } catch (e) {
-        console.error("Failed to parse saved books");
-      }
-    }
-
     fetchBooks()
       .then((data) => {
         if (data?.length > 0) setAllBooks(data);
       })
-      .catch(() => {});
+      .catch(() => {
+        const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
+        if (savedBooks) {
+          try {
+            const parsed = JSON.parse(savedBooks);
+            if (parsed.length > 0) setAllBooks(parsed);
+          } catch (e) {
+            console.error("Failed to parse saved books");
+          }
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return <LoadingScreen variant="suprematist" duration={1500} />;
+  }
 
   return (
     <section

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Inspiration, fetchInspirations } from "@/lib/supabase";
+import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { X, Quote, Palette, FileText, MessageSquareQuote, ExternalLink } from "lucide-react";
 
@@ -346,23 +347,25 @@ export default function Inspirations() {
   const [inspirations, setInspirations] = useState<Inspiration[]>(sampleInspirations);
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const saved = localStorage.getItem("portfolio_inspirations");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0) setInspirations(parsed);
-      } catch (e) {
-        console.error("Failed to parse saved inspirations");
-      }
-    }
-
     fetchInspirations()
       .then((data) => {
         if (data?.length > 0) setInspirations(data);
       })
-      .catch(() => {});
+      .catch(() => {
+        const saved = localStorage.getItem("portfolio_inspirations");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.length > 0) setInspirations(parsed);
+          } catch (e) {
+            console.error("Failed to parse saved inspirations");
+          }
+        }
+      })
+      .finally(() => setLoading(false));
     
     const handleUpdate = () => {
       const updated = localStorage.getItem("portfolio_inspirations");
@@ -395,6 +398,14 @@ export default function Inspirations() {
     { value: "quote", label: "Quotes" },
     { value: "art", label: "Art" },
   ];
+
+  if (loading) {
+    return (
+      <Layout>
+        <LoadingScreen variant="suprematist" duration={1500} />
+      </Layout>
+    );
+  }
   
   return (
     <Layout>

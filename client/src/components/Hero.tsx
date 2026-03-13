@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
 import { getStoredProfile, Profile, defaultProfile } from "@/lib/data";
 import { fetchProfile } from "@/lib/supabase";
+import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 
 export default function Hero() {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setProfile(getStoredProfile());
-
     fetchProfile()
       .then((data) => {
         if (data?.name) setProfile(data);
       })
-      .catch(() => {});
+      .catch(() => {
+        setProfile(getStoredProfile());
+      })
+      .finally(() => setLoading(false));
     
     const handleStorageChange = () => {
       setProfile(getStoredProfile());
@@ -26,6 +29,10 @@ export default function Hero() {
       window.removeEventListener("profile-updated", handleStorageChange);
     };
   }, []);
+
+  if (loading) {
+    return <LoadingScreen variant="suprematist" duration={1500} />;
+  }
 
   return (
     <section className="min-h-[80vh] flex flex-col justify-center px-6 md:px-24 lg:px-32 max-w-5xl mx-auto pt-24">

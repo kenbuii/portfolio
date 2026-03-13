@@ -180,6 +180,16 @@ function SortableInspirationRow({
   );
 }
 
+const ADMIN_PASSWORD_HASH = "39091e26b601cbbc7bc7277bf183bc93fdfb1ad684d72d2afa1930fb3790a336";
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
@@ -250,10 +260,12 @@ export default function Admin() {
     });
   }, [isLoggedIn]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "admin") {
+    const hash = await hashPassword(password);
+    if (hash === ADMIN_PASSWORD_HASH) {
       setIsLoggedIn(true);
+      localStorage.setItem("portfolio_admin_logged_in", "true");
       toast({
         title: "Welcome back",
         description: "You have successfully logged in to the CMS.",
@@ -618,7 +630,7 @@ export default function Admin() {
                       <Cloud className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setIsLoggedIn(false)}>Logout</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setIsLoggedIn(false); localStorage.removeItem("portfolio_admin_logged_in"); }}>Logout</Button>
                </div>
             </div>
             
