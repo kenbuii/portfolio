@@ -18,7 +18,6 @@ type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 export default function AboutEditor({ onSave }: AboutEditorProps) {
   const [about, setAbout] = useState<About>(defaultAbout);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [newGalleryUrl, setNewGalleryUrl] = useState("");
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
@@ -39,7 +38,7 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
     }, 100);
   }, []);
 
-  // Auto-save function
+  // Auto-save function — saves locally then syncs to Supabase
   const performAutoSave = useCallback(async (dataToSave: About) => {
     setAutoSaveStatus("saving");
     
@@ -47,10 +46,14 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
       await saveAbout(dataToSave);
       window.dispatchEvent(new Event("about-updated"));
       onSave?.(dataToSave);
+
+      // Sync to Supabase in background — don't block UI feedback
+      saveAboutToCloud(dataToSave)
+        .then(() => setLastSynced(new Date()))
+        .catch((err) => console.error("[AboutEditor] Cloud sync failed:", err));
+
       setAutoSaveStatus("saved");
       setLastSaved(new Date());
-      
-      // Reset status after 2 seconds
       setTimeout(() => setAutoSaveStatus("idle"), 2000);
     } catch (error) {
       setAutoSaveStatus("error");
@@ -91,30 +94,6 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
     };
   }, [about, performAutoSave]);
 
-  const handleSyncToSupabase = async () => {
-    setIsSyncing(true);
-    
-    try {
-      console.log("[AboutEditor] Syncing to Supabase...");
-      await saveAboutToCloud(about);
-      setLastSynced(new Date());
-      toast({
-        title: "Synced to Cloud",
-        description: "Your about section has been saved to Supabase.",
-      });
-    } catch (error: any) {
-      const msg = error?.message || String(error);
-      console.error("[AboutEditor] Sync failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Sync Failed",
-        description: `Could not sync to Supabase: ${msg}`,
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const handleReset = () => {
     skipNextAutoSave.current = true;  // Prevent auto-save from saving default content
     setAbout(defaultAbout);
@@ -124,7 +103,6 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
     });
   };
 
-  // Manual save to localStorage
   const handleSaveLocally = async () => {
     setIsSaving(true);
     try {
@@ -132,10 +110,9 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
       window.dispatchEvent(new Event("about-updated"));
       onSave?.(about);
       setLastSaved(new Date());
-      toast({
-        title: "About Saved",
-        description: "Your about section has been saved locally.",
-      });
+      await saveAboutToCloud(about);
+      setLastSynced(new Date());
+      toast({ title: "About Saved", description: "Saved locally and synced to cloud." });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -402,18 +379,9 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
           <Button type="button" variant="ghost" onClick={handleReset}>
             <RefreshCw className="w-4 h-4 mr-2" /> Reset
           </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleSyncToSupabase}
-            disabled={isSyncing}
-          >
-            <Cloud className="w-4 h-4 mr-2" /> 
-            {isSyncing ? "Syncing..." : "Sync to Cloud"}
-          </Button>
           <Button onClick={handleSaveLocally} disabled={isSaving} className="gap-2">
             <Save className="w-4 h-4" /> 
-            {isSaving ? "Saving..." : "Save Locally"}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>

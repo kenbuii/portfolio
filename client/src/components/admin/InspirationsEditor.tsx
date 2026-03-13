@@ -30,7 +30,7 @@ import {
   Image as ImageIcon, Save, Search, BookOpen, ExternalLink, MessageSquareQuote,
   GripVertical
 } from "lucide-react";
-import { Inspiration } from "@/lib/supabase";
+import { Inspiration, saveInspirationsToCloud, saveInspirationToCloud, deleteInspirationFromCloud } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -185,7 +185,7 @@ export default function InspirationsEditor({ onSave }: InspirationsEditorProps) 
     }, 100);
   }, []);
 
-  // Auto-save function
+  // Auto-save function — saves locally then syncs to Supabase
   const performAutoSave = useCallback(async (data: Inspiration[]) => {
     setAutoSaveStatus("saving");
     
@@ -193,6 +193,14 @@ export default function InspirationsEditor({ onSave }: InspirationsEditorProps) 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       window.dispatchEvent(new Event("inspirations-updated"));
       onSave?.(data);
+
+      // Sync to Supabase in background
+      if (data.length > 0) {
+        saveInspirationsToCloud(data).catch((err) =>
+          console.error("[InspirationsEditor] Cloud sync failed:", err)
+        );
+      }
+
       setAutoSaveStatus("saved");
       setLastSaved(new Date());
       
@@ -297,6 +305,9 @@ export default function InspirationsEditor({ onSave }: InspirationsEditorProps) 
 
   const handleDelete = (id: string) => {
     setInspirations(prev => prev.filter(item => item.id !== id));
+    deleteInspirationFromCloud(id).catch((err) =>
+      console.error("[InspirationsEditor] Cloud delete failed:", err)
+    );
     toast({ title: "Deleted", description: "Inspiration has been removed." });
   };
 

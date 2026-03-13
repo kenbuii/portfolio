@@ -283,14 +283,20 @@ export default function Admin() {
     const updatedBooks = [...books, newBook];
     setBooks(updatedBooks);
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(updatedBooks));
+    saveBooksToCloud(updatedBooks).catch((err) =>
+      console.error("[Admin] Book cloud sync failed:", err)
+    );
   };
 
   const handleUpdateBook = (updatedBook: Book) => {
-    const updatedBooks = books.map((book) => 
+    const updatedBooks = books.map((book) =>
       book.id === updatedBook.id ? updatedBook : book
     );
     setBooks(updatedBooks);
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(updatedBooks));
+    saveBooksToCloud(updatedBooks).catch((err) =>
+      console.error("[Admin] Book cloud sync failed:", err)
+    );
   };
 
 
@@ -542,6 +548,9 @@ export default function Admin() {
     const updatedBooks = books.filter((book) => book.id !== id);
     setBooks(updatedBooks);
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(updatedBooks));
+    saveBooksToCloud(updatedBooks).catch((err) =>
+      console.error("[Admin] Book cloud sync failed:", err)
+    );
     toast({
       title: "Book Removed",
       description: "The book has been removed from your shelf.",

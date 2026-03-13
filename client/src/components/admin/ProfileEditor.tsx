@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, RefreshCw, Cloud, CloudOff, FileText, Eye } from "lucide-react";
+// Cloud/CloudOff used for last-synced indicator
 import { Profile, getStoredProfile, saveProfile, defaultProfile } from "@/lib/data";
 import { saveProfileToCloud } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,6 @@ interface ProfileEditorProps {
 export default function ProfileEditor({ onSave }: ProfileEditorProps) {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const { toast } = useToast();
 
@@ -26,45 +26,22 @@ export default function ProfileEditor({ onSave }: ProfileEditorProps) {
 
   const handleSave = async () => {
     setIsSaving(true);
-    
-    // Save to localStorage
     saveProfile(profile);
-    
-    // Dispatch event to update Hero component
     window.dispatchEvent(new Event("profile-updated"));
-    
-    // Call optional onSave callback
     onSave?.(profile);
 
-    toast({
-      title: "Profile Saved",
-      description: "Your profile has been updated locally.",
-    });
-    
-    setIsSaving(false);
-  };
-
-  const handleSyncToSupabase = async () => {
-    setIsSyncing(true);
-    
     try {
-      console.log("[ProfileEditor] Syncing to Supabase...", profile);
       await saveProfileToCloud(profile);
       setLastSynced(new Date());
-      toast({
-        title: "Synced to Cloud",
-        description: "Your profile has been saved to Supabase.",
-      });
+      toast({ title: "Profile Saved", description: "Saved locally and synced to cloud." });
     } catch (error: any) {
-      const msg = error?.message || String(error);
-      console.error("[ProfileEditor] Sync failed:", error);
       toast({
         variant: "destructive",
-        title: "Sync Failed",
-        description: `Could not sync to Supabase: ${msg}`,
+        title: "Cloud Sync Failed",
+        description: `Saved locally but could not sync: ${error?.message || String(error)}`,
       });
     } finally {
-      setIsSyncing(false);
+      setIsSaving(false);
     }
   };
 
@@ -152,18 +129,9 @@ export default function ProfileEditor({ onSave }: ProfileEditorProps) {
           <Button type="button" variant="ghost" onClick={handleReset}>
             <RefreshCw className="w-4 h-4 mr-2" /> Reset
           </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleSyncToSupabase}
-            disabled={isSyncing}
-          >
-            <Cloud className="w-4 h-4 mr-2" /> 
-            {isSyncing ? "Syncing..." : "Sync to Cloud"}
-          </Button>
           <Button onClick={handleSave} disabled={isSaving} className="gap-2">
             <Save className="w-4 h-4" /> 
-            {isSaving ? "Saving..." : "Save Locally"}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
