@@ -11,15 +11,42 @@ import { Profile, About, Book } from "./data";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create Supabase client if credentials are available
+const isPlaceholder = (val: string | undefined) =>
+  !val || val.includes("your-") || val.includes("YOUR_");
+
 let supabase: SupabaseClient | null = null;
 
-if (supabaseUrl && supabaseAnonKey) {
+if (supabaseUrl && supabaseAnonKey && !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else if (supabaseUrl && isPlaceholder(supabaseUrl)) {
+  console.warn("[Supabase] Placeholder credentials detected in .env — update VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with real values");
 }
 
-// Check if we should use direct Supabase or fallback to API
 const useDirectSupabase = () => !!supabase;
+
+export function getSupabaseStatus(): { configured: boolean; url: string | null; reason?: string } {
+  if (!supabaseUrl && !supabaseAnonKey) {
+    return { configured: false, url: null, reason: "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are not set in .env" };
+  }
+  if (isPlaceholder(supabaseUrl) || isPlaceholder(supabaseAnonKey)) {
+    return { configured: false, url: supabaseUrl ?? null, reason: "Placeholder credentials detected — replace with real Supabase project values" };
+  }
+  return { configured: true, url: supabaseUrl ?? null };
+}
+
+export async function testSupabaseConnection(): Promise<{ ok: boolean; error?: string }> {
+  const status = getSupabaseStatus();
+  if (!status.configured) {
+    return { ok: false, error: status.reason };
+  }
+  try {
+    const { error } = await supabase!.from("profiles").select("id").limit(1);
+    if (error) return { ok: false, error: `Supabase query failed: ${error.message} (code: ${error.code})` };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: `Connection failed: ${err.message}` };
+  }
+}
 
 // ============================================
 // FALLBACK API FETCH (for development without Supabase)
@@ -29,17 +56,32 @@ async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const response = await fetch(endpoint, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-    ...options,
-  });
+  console.log(`[Supabase] API fallback → ${options?.method || "GET"} ${endpoint}`);
+  
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+      ...options,
+    });
+  } catch (err: any) {
+    throw new Error(`Network error calling ${endpoint}: ${err.message}. Is the Express server running? (npm run dev:server)`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `${endpoint} returned ${response.status} with content-type "${contentType}" instead of JSON. ` +
+      `The Express API server is likely not running. Start it with: npm run dev:server`
+    );
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    throw new Error(error.error || `HTTP ${response.status} from ${endpoint}`);
   }
 
   return response.json();
@@ -170,7 +212,7 @@ export async function saveBooksToCloud(books: Book[]): Promise<Book[]> {
 
 export interface Inspiration {
   id: string;
-  type: "poem" | "essay" | "art";
+  type: "poem" | "essay" | "art" | "quote";
   title: string;
   content: string;
   attribution: string;
@@ -180,6 +222,9 @@ export interface Inspiration {
   size?: "small" | "medium" | "large";
   rotation?: number;
   featured?: boolean;
+  fontSize?: number;
+  imageUrl?: string;
+  link?: string;
   created_at?: string;
   updated_at?: string;
 }

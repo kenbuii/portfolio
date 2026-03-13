@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-secondary selection:text-secondary-foreground">
       {/* Left Sidebar Navigation */}
-      <aside className="fixed left-0 top-0 bottom-0 w-24 z-50 bg-background/80 backdrop-blur-md border-r border-border/20 flex flex-col items-center py-6">
+      <aside className="fixed left-0 top-0 bottom-0 w-24 z-50 bg-background/80 backdrop-blur-md border-r border-border/20 flex flex-col items-center py-6" style={{ fontFamily: "var(--font-home)" }}>
         {/* Logo - Links to Home */}
         <Link href="/">
           <img 

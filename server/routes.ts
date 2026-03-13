@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { parse } from "csv-parse/sync";
+import * as fs from "fs";
+import * as path from "path";
 
 // Supabase client setup (optional - only used if SUPABASE_URL and SUPABASE_KEY are set)
 const getSupabaseClient = async () => {
@@ -302,6 +305,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete inspiration:", error);
       res.status(500).json({ error: "Failed to delete inspiration" });
+    }
+  });
+
+  // ============================================
+  // Poem Search (Poetry Foundation CSV + PoetryDB)
+  // ============================================
+
+  interface PoemSearchResult {
+    title: string;
+    author: string;
+    content: string;
+    source: string;
+    tags?: string;
+  }
+
+  interface CsvPoemRecord {
+    title: string;
+    poem: string;
+    poet: string;
+    tags: string;
+  }
+
+  let cachedPoems: CsvPoemRecord[] | null = null;
+
+  function loadPoetryCSV(): CsvPoemRecord[] {
+    if (cachedPoems) return cachedPoems;
+
+    try {
+      const csvPath = path.resolve("PoetryFoundationData.csv");
+      const rawCSV = fs.readFileSync(csvPath, "utf-8");
+      const records = parse(rawCSV, {
+        columns: true,
+        skip_empty_lines: true,
+        relax_column_count: true,
+        trim: true,
+      });
+
+      cachedPoems = records.map((r: any) => ({
+        title: (r.Title || "").replace(/\s+/g, " ").trim(),
+        poem: (r.Poem || "").trim(),
+        poet: (r.Poet || "").replace(/\s+/g, " ").trim(),
+        tags: (r.Tags || "").trim(),
+      }));
+
+      console.log(`Loaded ${cachedPoems.length} poems from Poetry Foundation CSV`);
+      return cachedPoems;
+    } catch (error) {
+      console.error("Failed to load Poetry Foundation CSV:", error);
+      cachedPoems = [];
+      return cachedPoems;
+    }
+  }
+
+  function searchCSV(query: string): PoemSearchResult[] {
+    const poems = loadPoetryCSV();
+    const results: PoemSearchResult[] = [];
+    const q = query.toLowerCase();
+
+    for (const p of poems) {
+      if (results.length >= 10) break;
+      if (!p.title && !p.poet) continue;
+
+      const titleMatch = p.title.toLowerCase().includes(q);
+      const poetMatch = p.poet.toLowerCase().includes(q);
+
+      if (titleMatch || poetMatch) {
+        results.push({
+          title: p.title,
+          author: p.poet,
+          content: p.poem,
+          source: "Poetry Foundation",
+          tags: p.tags,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async function searchPoetryDB(query: string): Promise<PoemSearchResult[]> {
+    const results: PoemSearchResult[] = [];
+
+    try {
+      const [titleRes, authorRes] = await Promise.allSettled([
+        fetch(`https://poetrydb.org/title/${encodeURIComponent(query)}`),
+        fetch(`https://poetrydb.org/author/${encodeURIComponent(query)}`),
+      ]);
+
+      const processResponse = async (res: PromiseSettledResult<Response>) => {
+        if (res.status !== "fulfilled" || !res.value.ok) return [];
+        try {
+          const data = await res.value.json();
+          if (!Array.isArray(data)) return [];
+          return data.slice(0, 8).map((p: any) => ({
+            title: p.title || "",
+            author: p.author || "",
+            content: (p.lines || []).join("\n"),
+            source: "PoetryDB",
+          }));
+        } catch {
+          return [];
+        }
+      };
+
+      const [titleResults, authorResults] = await Promise.all([
+        processResponse(titleRes),
+        processResponse(authorRes),
+      ]);
+
+      const seen = new Set<string>();
+      for (const r of [...titleResults, ...authorResults]) {
+        const key = `${r.title}|${r.author}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push(r);
+        }
+      }
+    } catch (error) {
+      console.error("PoetryDB search error:", error);
+    }
+
+    return results.slice(0, 10);
+  }
+
+  app.get("/api/poems/search", async (req, res) => {
+    const query = ((req.query.q as string) || "").trim();
+
+    if (!query || query.length < 2) {
+      return res.json({ results: [] });
+    }
+
+    try {
+      const [csvResults, poetryDbResults] = await Promise.allSettled([
+        Promise.resolve(searchCSV(query)),
+        searchPoetryDB(query),
+      ]);
+
+      const csv = csvResults.status === "fulfilled" ? csvResults.value : [];
+      const pdb = poetryDbResults.status === "fulfilled" ? poetryDbResults.value : [];
+
+      const seen = new Set<string>();
+      const combined: PoemSearchResult[] = [];
+
+      for (const r of [...csv, ...pdb]) {
+        const key = `${r.title.toLowerCase()}|${r.author.toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          combined.push(r);
+        }
+        if (combined.length >= 20) break;
+      }
+
+      res.json({ results: combined });
+    } catch (error) {
+      console.error("Poem search error:", error);
+      res.status(500).json({ error: "Failed to search poems" });
     }
   });
 

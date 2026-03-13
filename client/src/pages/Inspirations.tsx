@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Inspiration } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { X, Quote, Palette, FileText } from "lucide-react";
+import { X, Quote, Palette, FileText, MessageSquareQuote, ExternalLink } from "lucide-react";
 
 // Sample data for initial display (will be replaced by Supabase data)
 const sampleInspirations: Inspiration[] = [
@@ -66,18 +66,20 @@ const sampleInspirations: Inspiration[] = [
   },
 ];
 
-type FilterType = "all" | "poem" | "essay" | "art";
+type FilterType = "all" | "poem" | "essay" | "art" | "quote";
 
 const typeIcons = {
   poem: Quote,
   essay: FileText,
   art: Palette,
+  quote: MessageSquareQuote,
 };
 
 const typeLabels = {
   poem: "Poem",
   essay: "Essay",
   art: "Art",
+  quote: "Quote",
 };
 
 function InspirationCard({ 
@@ -95,9 +97,8 @@ function InspirationCard({
       onClick={onClick}
       className={cn(
         "group bg-background border border-border/50 rounded-sm shadow-md cursor-pointer",
-        "transition-all duration-300 ease-out",
+        "transition-all duration-300 ease-out break-inside-avoid",
         "hover:shadow-xl hover:scale-[1.02] hover:z-10",
-        item.size === "large" && "md:col-span-2",
         item.featured && "ring-2 ring-secondary/30"
       )}
       style={{
@@ -110,52 +111,103 @@ function InspirationCard({
         e.currentTarget.style.transform = `rotate(${rotation}deg)`;
       }}
     >
-      {/* Art type - show image */}
       {item.type === "art" && (
-        <div className="aspect-square overflow-hidden rounded-t-sm">
+        <div className="overflow-hidden rounded-t-sm">
           <img 
             src={item.content} 
             alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
           />
         </div>
       )}
-      
-      <div className="p-5">
-        {/* Type badge */}
-        <div className="flex items-center gap-1.5 mb-3">
-          <Icon className="w-3 h-3 text-secondary" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {typeLabels[item.type]}
-          </span>
+
+      {item.type === "poem" && item.imageUrl && (
+        <div className="overflow-hidden rounded-t-sm">
+          <img
+            src={item.imageUrl}
+            alt={item.title}
+            className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+          />
         </div>
-        
-        {/* Content - for poems and essays */}
-        {item.type !== "art" && (
-          <blockquote className="font-serif italic text-foreground/90 leading-relaxed mb-4 whitespace-pre-line">
-            "{item.content}"
-          </blockquote>
-        )}
-        
-        {/* Attribution */}
-        <div className="mb-4">
-          <p className="font-bold text-primary text-sm">{item.attribution}</p>
-          <p className="text-xs text-muted-foreground">
-            {item.title}
-            {item.source && `, ${item.source}`}
-            {item.year && ` (${item.year})`}
-          </p>
-        </div>
-        
-        {/* Blurb */}
-        {item.blurb && (
-          <div className="pt-3 border-t border-border/30">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              <span className="font-bold text-secondary">My take:</span> {item.blurb}
-            </p>
+      )}
+
+      {item.type === "quote" ? (
+        <div className="p-6 flex flex-col gap-4">
+          <div className="flex items-start gap-3">
+            <Icon className="w-7 h-7 text-secondary/40 shrink-0 mt-0.5" />
+            <blockquote
+              className="font-serif italic text-foreground/90 leading-relaxed whitespace-pre-line"
+              style={{ fontSize: `${(item.fontSize || 1) * 1.1}rem` }}
+            >
+              {item.content}
+            </blockquote>
           </div>
-        )}
-      </div>
+          <div className="pl-10">
+            <p className="font-bold text-primary text-sm">— {item.attribution}</p>
+            {(item.source || item.year) && (
+              <p className="text-xs text-muted-foreground">
+                {item.source}{item.source && item.year && ", "}{item.year}
+              </p>
+            )}
+          </div>
+          {item.blurb && (
+            <div className="pl-10 pt-2 border-t border-border/30">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-bold text-secondary">My take:</span> {item.blurb}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="p-5">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Icon className="w-3 h-3 text-secondary" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              {typeLabels[item.type]}
+            </span>
+          </div>
+
+          {item.type !== "art" && !(item.type === "poem" && item.imageUrl) && (
+            <blockquote
+              className={cn(
+                "font-serif italic text-foreground/90 leading-relaxed mb-4 whitespace-pre-line",
+                item.type === "poem" && "font-[Georgia,serif] leading-[1.8]"
+              )}
+              style={{ fontSize: `${(item.fontSize || 1) * 0.95}rem` }}
+            >
+              "{item.content}"
+            </blockquote>
+          )}
+
+          <div className="mb-4">
+            <p className="font-bold text-primary text-sm">{item.attribution}</p>
+            <p className="text-xs text-muted-foreground">
+              {item.title}
+              {item.source && `, ${item.source}`}
+              {item.year && ` (${item.year})`}
+            </p>
+            {item.type === "essay" && item.link && (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="inline-flex items-center gap-1 mt-1.5 text-xs text-secondary hover:text-secondary/80 transition-colors"
+              >
+                Read essay <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+
+          {item.blurb && (
+            <div className="pt-3 border-t border-border/30">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-bold text-secondary">My take:</span> {item.blurb}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -188,52 +240,97 @@ function InspirationModal({
             <X className="w-5 h-5" />
           </button>
           
-          {/* Art image */}
           {item.type === "art" && (
-            <div className="w-full aspect-video overflow-hidden rounded-t-lg bg-muted">
+            <div className="w-full overflow-hidden rounded-t-lg bg-muted">
               <img 
                 src={item.content} 
                 alt={item.title}
-                className="w-full h-full object-contain"
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          )}
+
+          {item.type === "poem" && item.imageUrl && (
+            <div className="w-full overflow-hidden rounded-t-lg bg-muted">
+              <img
+                src={item.imageUrl}
+                alt={item.title}
+                className="w-full h-auto object-contain"
               />
             </div>
           )}
           
           <div className="p-8">
-            {/* Type badge */}
             <div className="flex items-center gap-2 mb-4">
               <Icon className="w-4 h-4 text-secondary" />
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 {typeLabels[item.type]}
               </span>
             </div>
-            
-            {/* Title */}
-            <h2 className="text-2xl font-serif font-bold text-primary mb-2">
-              {item.title}
-            </h2>
-            
-            {/* Attribution */}
-            <p className="text-muted-foreground mb-6">
-              {item.attribution}
-              {item.source && ` — ${item.source}`}
-              {item.year && ` (${item.year})`}
-            </p>
-            
-            {/* Content */}
-            {item.type !== "art" && (
-              <blockquote className="font-serif italic text-lg text-foreground/90 leading-relaxed mb-8 pl-4 border-l-2 border-secondary/50 whitespace-pre-line">
-                {item.content}
-              </blockquote>
+
+            {item.type === "quote" ? (
+              <>
+                <div className="flex items-start gap-4 mb-6">
+                  <Icon className="w-10 h-10 text-secondary/30 shrink-0 mt-1" />
+                  <blockquote
+                    className="font-serif italic text-foreground/90 leading-relaxed whitespace-pre-line"
+                    style={{ fontSize: `${(item.fontSize || 1) * 1.35}rem` }}
+                  >
+                    {item.content}
+                  </blockquote>
+                </div>
+                <div className="pl-14 mb-6">
+                  <p className="font-bold text-primary text-base">— {item.attribution}</p>
+                  {(item.source || item.year) && (
+                    <p className="text-sm text-muted-foreground">
+                      {item.source}{item.source && item.year && ", "}{item.year}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-serif font-bold text-primary mb-2">
+                  {item.title}
+                </h2>
+                <div className="mb-6">
+                  <p className="text-muted-foreground">
+                    {item.attribution}
+                    {item.source && ` — ${item.source}`}
+                    {item.year && ` (${item.year})`}
+                  </p>
+                  {item.type === "essay" && item.link && (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-secondary hover:text-secondary/80 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Read the full essay
+                    </a>
+                  )}
+                </div>
+                {item.type !== "art" && !(item.type === "poem" && item.imageUrl) && (
+                  <blockquote
+                    className={cn(
+                      "font-serif italic text-foreground/90 leading-relaxed mb-8 pl-4 border-l-2 border-secondary/50 whitespace-pre-line",
+                      item.type === "poem" && "font-[Georgia,serif] leading-[1.9]"
+                    )}
+                    style={{ fontSize: `${(item.fontSize || 1) * 1.125}rem` }}
+                  >
+                    {item.content}
+                  </blockquote>
+                )}
+              </>
             )}
-            
-            {/* Blurb */}
+
             {item.blurb && (
               <div className="bg-muted/30 rounded-lg p-5 border border-border/50">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
                   My Take
                 </p>
-                <p className="text-foreground/90 leading-relaxed">
+                <p className="text-foreground/90 leading-relaxed whitespace-pre-line">
                   {item.blurb}
                 </p>
               </div>
@@ -293,6 +390,7 @@ export default function Inspirations() {
     { value: "all", label: "All" },
     { value: "poem", label: "Poems" },
     { value: "essay", label: "Essays" },
+    { value: "quote", label: "Quotes" },
     { value: "art", label: "Art" },
   ];
   
@@ -330,14 +428,15 @@ export default function Inspirations() {
             </div>
           </div>
           
-          {/* Masonry Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
+          {/* Masonry Layout */}
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 [column-fill:_balance]">
             {filteredItems.map((item) => (
-              <InspirationCard
-                key={item.id}
-                item={item}
-                onClick={() => setSelectedItem(item)}
-              />
+              <div key={item.id} className="mb-6">
+                <InspirationCard
+                  item={item}
+                  onClick={() => setSelectedItem(item)}
+                />
+              </div>
             ))}
           </div>
           

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, RefreshCw, Cloud, CloudOff, FileText, Eye } from "lucide-react";
 import { Profile, getStoredProfile, saveProfile, defaultProfile } from "@/lib/data";
+import { saveProfileToCloud } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import RichTextEditor from "./RichTextEditor";
 
@@ -47,26 +48,20 @@ export default function ProfileEditor({ onSave }: ProfileEditorProps) {
     setIsSyncing(true);
     
     try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to sync");
-      }
-      
+      console.log("[ProfileEditor] Syncing to Supabase...", profile);
+      await saveProfileToCloud(profile);
       setLastSynced(new Date());
       toast({
         title: "Synced to Cloud",
         description: "Your profile has been saved to Supabase.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      const msg = error?.message || String(error);
+      console.error("[ProfileEditor] Sync failed:", error);
       toast({
         variant: "destructive",
         title: "Sync Failed",
-        description: "Could not sync to Supabase. Check your connection.",
+        description: `Could not sync to Supabase: ${msg}`,
       });
     } finally {
       setIsSyncing(false);

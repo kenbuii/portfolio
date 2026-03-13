@@ -71,14 +71,36 @@ export default function BookEditor({ initialBooks, onSave, onUpdate, onDelete }:
     if (!searchQuery) return;
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
-      const data = await response.json();
+      let data: { items?: GoogleBookVolume[] } = {};
+
+      // Try the server proxy first; fall back to direct Google Books API call
+      // (proxy is only available when running the Express server, not Vite-only dev)
+      try {
+        const proxyRes = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
+        if (proxyRes.ok) {
+          data = await proxyRes.json();
+        } else {
+          throw new Error("proxy unavailable");
+        }
+      } catch {
+        const url = new URL("https://www.googleapis.com/books/v1/volumes");
+        url.searchParams.set("q", searchQuery);
+        const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+        if (apiKey) url.searchParams.set("key", apiKey);
+        const directRes = await fetch(url.toString());
+        if (!directRes.ok) throw new Error(`Google Books API error: ${directRes.status}`);
+        data = await directRes.json();
+      }
+
       setSearchResults(data.items || []);
+      if (!data.items?.length) {
+        toast({ title: "No results", description: "No books found for that query." });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch books from Google.",
+        title: "Search Failed",
+        description: "Could not reach Google Books. Check your connection and try again.",
       });
     } finally {
       setIsSearching(false);

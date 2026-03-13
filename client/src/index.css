@@ -99,12 +99,14 @@
      rule above, then reference it here.
      ============================================== */
   
-  /* Primary sans-serif font (body text) */
-  /* Body text: Century Gothic */
-  --font-sans: "Century Gothic", "Avant Garde", sans-serif;
+  /* Body text: Instrument Serif (except Home page) */
+  --font-sans: "Instrument Serif", Georgia, serif;
 
   /* Titles: Clarendon */
   --font-serif: "Clarendon", "Rockwell", Georgia, serif;
+
+  /* Original body font kept for Home page */
+  --font-home: "Century Gothic", "Avant Garde", sans-serif;
 }
 
 @layer base {

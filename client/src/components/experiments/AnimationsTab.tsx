@@ -67,6 +67,12 @@ const categories: { id: AnimationCategory; name: string; variants: AnimationVari
       { id: "split", name: "Split Text", description: "Characters animate in individually" },
       { id: "mask", name: "Mask Reveal", description: "Text revealed by moving mask" },
       { id: "assemble", name: "Scattered Assemble", description: "Letters snap from scattered positions" },
+      { id: "typewriter", name: "Typewriter", description: "Characters typed out with a blinking cursor" },
+      { id: "blur", name: "Blur Resolve", description: "Text starts blurred and resolves into focus" },
+      { id: "cascade", name: "Cascade Drop", description: "Letters drop in from above like a waterfall" },
+      { id: "wave", name: "Wave Rise", description: "Characters rise in a sequential wave pattern" },
+      { id: "glitch", name: "Glitch Reveal", description: "Text appears through digital distortion" },
+      { id: "stagger-lines", name: "Stagger Lines", description: "Lines slide in from alternating sides" },
     ],
   },
 ];
@@ -330,6 +336,24 @@ function AnimationPreview({
     }
     if (variant === "assemble") {
       return <AssembleDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "typewriter") {
+      return <TypewriterHeroDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "blur") {
+      return <BlurResolveDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "cascade") {
+      return <CascadeDropDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "wave") {
+      return <WaveRiseDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "glitch") {
+      return <GlitchRevealDemo isPlaying={isPlaying} mood={mood} />;
+    }
+    if (variant === "stagger-lines") {
+      return <StaggerLinesDemo isPlaying={isPlaying} mood={mood} />;
     }
   }
 
@@ -1457,6 +1481,284 @@ export function FactoryCogs({ isPlaying }: { isPlaying: boolean }) {
           100% { width: 0%; }
         }
       `}</style>
+    </div>
+  );
+}
+
+// Typewriter Hero
+function TypewriterHeroDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const text = "PORTFOLIO";
+  const speed = mood === "cinematic" ? 120 : mood === "minimal" ? 50 : mood === "glitchy" ? 30 : 80;
+  const [displayed, setDisplayed] = useState("");
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!isPlaying) { setDisplayed(""); return; }
+
+    let i = 0;
+    setDisplayed("");
+    intervalRef.current = setInterval(() => {
+      if (i < text.length) {
+        setDisplayed(text.slice(0, i + 1));
+        i++;
+      } else if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }, speed);
+
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isPlaying, mood]);
+
+  return (
+    <div className="text-5xl font-bold tracking-wider font-serif">
+      {displayed}
+      <span
+        className={cn(
+          "inline-block w-[3px] h-[1.1em] bg-secondary ml-1 align-text-bottom",
+          isPlaying ? "animate-blink-cursor" : "opacity-0"
+        )}
+      />
+      <style>{`
+        @keyframes blink-cursor {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .animate-blink-cursor {
+          animation: blink-cursor 0.7s steps(2) infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Blur Resolve Hero
+function BlurResolveDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const duration = mood === "cinematic" ? 1500 : mood === "minimal" ? 400 : mood === "glitchy" ? 150 : 800;
+
+  return (
+    <div className="text-center">
+      <h2
+        className="text-5xl font-bold tracking-wider"
+        style={{
+          transition: `filter ${duration}ms ease-out, opacity ${duration}ms ease-out, transform ${duration}ms ease-out`,
+          filter: isPlaying ? "blur(0px)" : "blur(18px)",
+          opacity: isPlaying ? 1 : 0.3,
+          transform: isPlaying ? "scale(1)" : "scale(1.08)",
+        }}
+      >
+        CLARITY
+      </h2>
+      <p
+        className="text-sm text-muted-foreground mt-3"
+        style={{
+          transition: `filter ${duration}ms ease-out ${duration * 0.3}ms, opacity ${duration}ms ease-out ${duration * 0.3}ms`,
+          filter: isPlaying ? "blur(0px)" : "blur(10px)",
+          opacity: isPlaying ? 1 : 0,
+        }}
+      >
+        From noise to signal
+      </p>
+    </div>
+  );
+}
+
+// Cascade Drop Hero
+function CascadeDropDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const text = "DESCEND";
+  const duration = mood === "cinematic" ? 700 : mood === "minimal" ? 250 : mood === "bouncy" ? 600 : 400;
+  const easing = mood === "bouncy"
+    ? "cubic-bezier(0.34, 1.56, 0.64, 1)"
+    : mood === "organic"
+      ? "cubic-bezier(0.22, 1, 0.36, 1)"
+      : "ease-out";
+
+  return (
+    <div className="text-5xl font-bold tracking-wider">
+      {text.split("").map((char, i) => (
+        <span
+          key={i}
+          className="inline-block"
+          style={{
+            transition: `transform ${duration}ms ${easing}, opacity ${duration * 0.6}ms ease-out`,
+            transitionDelay: isPlaying ? `${i * 60}ms` : "0ms",
+            opacity: isPlaying ? 1 : 0,
+            transform: isPlaying
+              ? "translateY(0) rotate(0deg)"
+              : `translateY(-80px) rotate(${(i % 2 === 0 ? -1 : 1) * 12}deg)`,
+          }}
+        >
+          {char}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Wave Rise Hero
+function WaveRiseDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const text = "WAVELENGTH";
+  const duration = mood === "cinematic" ? 600 : mood === "minimal" ? 250 : 400;
+  const easing = mood === "bouncy"
+    ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+    : mood === "organic"
+      ? "cubic-bezier(0.22, 1, 0.36, 1)"
+      : "ease-out";
+
+  return (
+    <div className="text-5xl font-bold tracking-wider">
+      {text.split("").map((char, i) => {
+        const peakDelay = i * 50;
+        return (
+          <span
+            key={i}
+            className="inline-block"
+            style={{
+              transition: `transform ${duration}ms ${easing}, opacity ${duration * 0.5}ms ease-out`,
+              transitionDelay: isPlaying ? `${peakDelay}ms` : "0ms",
+              opacity: isPlaying ? 1 : 0,
+              transform: isPlaying ? "translateY(0)" : "translateY(40px)",
+            }}
+          >
+            {char}
+          </span>
+        );
+      })}
+      {isPlaying && (
+        <style>{`
+          @keyframes wave-settle {
+            0% { transform: translateY(40px); }
+            60% { transform: translateY(-8px); }
+            100% { transform: translateY(0); }
+          }
+        `}</style>
+      )}
+    </div>
+  );
+}
+
+// Glitch Reveal Hero
+function GlitchRevealDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const duration = mood === "cinematic" ? 1200 : mood === "minimal" ? 300 : mood === "glitchy" ? 600 : 500;
+  const [phase, setPhase] = useState<"idle" | "glitching" | "resolved">("idle");
+
+  useEffect(() => {
+    if (!isPlaying) { setPhase("idle"); return; }
+    setPhase("glitching");
+    const t = setTimeout(() => setPhase("resolved"), duration * 0.6);
+    return () => clearTimeout(t);
+  }, [isPlaying, duration]);
+
+  return (
+    <div className="relative text-center select-none">
+      <h2
+        className="text-5xl font-bold tracking-wider relative"
+        style={{
+          opacity: phase === "idle" ? 0 : 1,
+          transition: "opacity 100ms",
+        }}
+      >
+        <span
+          className="relative inline-block"
+          style={{
+            animation: phase === "glitching" ? `hero-glitch-text 80ms steps(2) infinite` : "none",
+          }}
+        >
+          DISRUPT
+        </span>
+      </h2>
+
+      {phase === "glitching" && (
+        <>
+          <h2
+            className="text-5xl font-bold tracking-wider absolute inset-0 text-secondary"
+            style={{
+              clipPath: "polygon(0 0, 100% 0, 100% 45%, 0 45%)",
+              animation: "hero-glitch-top 100ms steps(3) infinite",
+            }}
+          >
+            DISRUPT
+          </h2>
+          <h2
+            className="text-5xl font-bold tracking-wider absolute inset-0"
+            style={{
+              clipPath: "polygon(0 55%, 100% 55%, 100% 100%, 0 100%)",
+              animation: "hero-glitch-bottom 120ms steps(3) infinite",
+              color: "hsl(0 75% 50%)",
+            }}
+          >
+            DISRUPT
+          </h2>
+        </>
+      )}
+
+      <div
+        className="h-[2px] bg-secondary mx-auto mt-4"
+        style={{
+          transition: `width ${duration * 0.5}ms ease-out ${duration * 0.4}ms, opacity ${duration * 0.3}ms ease-out ${duration * 0.4}ms`,
+          width: phase === "resolved" ? "120px" : "0px",
+          opacity: phase === "resolved" ? 1 : 0,
+        }}
+      />
+
+      <style>{`
+        @keyframes hero-glitch-text {
+          0% { transform: translate(0); }
+          25% { transform: translate(-2px, 1px); }
+          50% { transform: translate(2px, -1px); }
+          75% { transform: translate(-1px, -1px); }
+          100% { transform: translate(0); }
+        }
+        @keyframes hero-glitch-top {
+          0% { transform: translateX(0); }
+          33% { transform: translateX(4px); }
+          66% { transform: translateX(-3px); }
+          100% { transform: translateX(0); }
+        }
+        @keyframes hero-glitch-bottom {
+          0% { transform: translateX(0); }
+          33% { transform: translateX(-4px); }
+          66% { transform: translateX(5px); }
+          100% { transform: translateX(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Stagger Lines Hero
+function StaggerLinesDemo({ isPlaying, mood }: { isPlaying: boolean; mood: AnimationMood }) {
+  const duration = mood === "cinematic" ? 800 : mood === "minimal" ? 300 : mood === "bouncy" ? 600 : 500;
+  const easing = mood === "bouncy"
+    ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+    : mood === "organic"
+      ? "cubic-bezier(0.22, 1, 0.36, 1)"
+      : "cubic-bezier(0.16, 1, 0.3, 1)";
+
+  const lines = ["WE BUILD", "THINGS THAT", "MATTER"];
+
+  return (
+    <div className="space-y-2 text-center">
+      {lines.map((line, i) => {
+        const fromLeft = i % 2 === 0;
+        return (
+          <div key={i} className="overflow-hidden">
+            <h2
+              className="text-4xl font-bold tracking-wide"
+              style={{
+                transition: `transform ${duration}ms ${easing}, opacity ${duration * 0.6}ms ease-out`,
+                transitionDelay: isPlaying ? `${i * 120}ms` : "0ms",
+                opacity: isPlaying ? 1 : 0,
+                transform: isPlaying
+                  ? "translateX(0)"
+                  : `translateX(${fromLeft ? "-100%" : "100%"})`,
+              }}
+            >
+              {line}
+            </h2>
+          </div>
+        );
+      })}
     </div>
   );
 }
