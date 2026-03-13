@@ -179,7 +179,7 @@ export async function fetchBooks(): Promise<Book[]> {
     const { data, error } = await supabase!
       .from("books")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("sort_order", { ascending: true, nullsFirst: false });
     if (error) throw error;
     return data as Book[];
   }
@@ -191,8 +191,9 @@ export async function saveBooksToCloud(books: Book[]): Promise<Book[]> {
     const { data, error } = await supabase!
       .from("books")
       .upsert(
-        books.map((book) => ({
+        books.map((book, index) => ({
           ...book,
+          sort_order: index,
           updated_at: new Date().toISOString(),
         }))
       )

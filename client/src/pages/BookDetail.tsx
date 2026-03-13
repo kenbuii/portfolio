@@ -1,5 +1,6 @@
 import { useRoute, useLocation } from "wouter";
 import { books as defaultBooks, Book, STORAGE_KEYS } from "@/lib/data";
+import { fetchBooks } from "@/lib/supabase";
 import { Star, ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
@@ -9,25 +10,37 @@ export default function BookDetail() {
   const [, params] = useRoute("/book/:id");
   const [, navigate] = useLocation();
   const [allBooks, setAllBooks] = useState<Book[]>(defaultBooks);
+  const [loading, setLoading] = useState(true);
 
-  // Load books from localStorage
   useEffect(() => {
+    // Seed with localStorage immediately while Supabase loads
     const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
     if (savedBooks) {
       try {
         const parsed = JSON.parse(savedBooks);
-        if (parsed.length > 0) {
-          setAllBooks(parsed);
-        }
-      } catch (e) {
-        console.error("Failed to parse saved books");
-      }
+        if (parsed.length > 0) setAllBooks(parsed);
+      } catch (e) {}
     }
+
+    fetchBooks()
+      .then((data) => { if (data?.length > 0) setAllBooks(data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const book = allBooks.find((b) => b.id === params?.id);
 
-  if (!book) {
+  if (loading && !book) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-card">
+          <div className="text-center text-muted-foreground">Loading...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!loading && !book) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-card">

@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS books (
   review TEXT,
   link TEXT,
   color TEXT DEFAULT '#123524',
+  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

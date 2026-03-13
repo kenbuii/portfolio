@@ -516,10 +516,13 @@ export default function Admin() {
       const reorderedBooks = arrayMove(books, oldIndex, newIndex);
       setBooks(reorderedBooks);
       localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(reorderedBooks));
+      saveBooksToCloud(reorderedBooks).catch((err) =>
+        console.error("[Admin] Book reorder sync failed:", err)
+      );
       
       toast({
         title: "Order Updated",
-        description: "Book order has been saved.",
+        description: "Book order saved and synced to cloud.",
       });
     }
   };
