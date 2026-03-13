@@ -350,21 +350,21 @@ export default function Inspirations() {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    const saved = localStorage.getItem("portfolio_inspirations");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) setInspirations(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved inspirations");
+      }
+    }
+
     fetchInspirations()
       .then((data) => {
         if (data?.length > 0) setInspirations(data);
       })
-      .catch(() => {
-        const saved = localStorage.getItem("portfolio_inspirations");
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed.length > 0) setInspirations(parsed);
-          } catch (e) {
-            console.error("Failed to parse saved inspirations");
-          }
-        }
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
     
     const handleUpdate = () => {

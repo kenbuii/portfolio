@@ -15,7 +15,7 @@ const layoutLabels: Record<LayoutVariant, string> = {
 };
 
 export default function About() {
-  const [about, setAbout] = useState<AboutType>(defaultAbout);
+  const [about, setAbout] = useState<AboutType>(getStoredAbout());
   const [layout, setLayout] = useState<LayoutVariant>("classic");
   const [loading, setLoading] = useState(true);
 
@@ -24,9 +24,7 @@ export default function About() {
       .then((data) => {
         if (data?.content) setAbout(data);
       })
-      .catch(() => {
-        setAbout(getStoredAbout());
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
 
     const savedLayout = localStorage.getItem("about_layout");
@@ -51,14 +49,6 @@ export default function About() {
     setLayout(newLayout);
     localStorage.setItem("about_layout", newLayout);
   };
-
-  if (loading) {
-    return (
-      <Layout>
-        <LoadingScreen variant="suprematist" duration={1500} />
-      </Layout>
-    );
-  }
 
   // Parse content to separate list items from main bio
   const { bioContent, listContent } = useMemo(() => {
@@ -358,6 +348,7 @@ export default function About() {
 
   return (
     <Layout>
+      {loading && <LoadingScreen variant="suprematist" onComplete={() => setLoading(false)} />}
       <section className="pt-32 pb-24 px-6 md:px-12 min-h-screen">
         {layout === "classic" && <ClassicLayout />}
         {layout === "split" && <SplitLayout />}

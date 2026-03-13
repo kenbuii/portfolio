@@ -11,7 +11,6 @@ import { Star, X, ChevronRight } from "lucide-react";
 
 type ViewMode = "visual" | "text";
 
-// Text-based book item with review modal
 function BookTextItem({ book }: { book: Book }) {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const isFavorite = book.rating >= 5;
@@ -37,19 +36,15 @@ function BookTextItem({ book }: { book: Book }) {
         </div>
       </div>
 
-      {/* Review Modal via Portal */}
       {isReviewOpen && createPortal(
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-200"
             onClick={() => setIsReviewOpen(false)}
           />
 
-          {/* Modal */}
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="relative w-full max-w-md bg-background rounded-lg shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
-              {/* Close Button */}
               <button
                 onClick={() => setIsReviewOpen(false)}
                 className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted transition-colors"
@@ -58,7 +53,6 @@ function BookTextItem({ book }: { book: Book }) {
               </button>
 
               <div className="p-6">
-                {/* Book Info */}
                 <div className="mb-6">
                   <h3 className="font-serif font-bold text-xl text-primary">
                     {book.title}
@@ -68,7 +62,6 @@ function BookTextItem({ book }: { book: Book }) {
                   </p>
                 </div>
 
-                {/* Rating */}
                 <div className="flex items-center gap-2 mb-4">
                   <div className="flex gap-0.5">
                     {[...Array(5)].map((_, i) => (
@@ -87,7 +80,6 @@ function BookTextItem({ book }: { book: Book }) {
                   </span>
                 </div>
 
-                {/* Review */}
                 <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
                   <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-2">
                     My Review
@@ -112,21 +104,21 @@ export default function Bookshelf() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
+    if (savedBooks) {
+      try {
+        const parsed = JSON.parse(savedBooks);
+        if (parsed.length > 0) setAllBooks(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved books");
+      }
+    }
+
     fetchBooks()
       .then((data) => {
         if (data?.length > 0) setAllBooks(data);
       })
-      .catch(() => {
-        const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
-        if (savedBooks) {
-          try {
-            const parsed = JSON.parse(savedBooks);
-            if (parsed.length > 0) setAllBooks(parsed);
-          } catch (e) {
-            console.error("Failed to parse saved books");
-          }
-        }
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -140,7 +132,6 @@ export default function Bookshelf() {
       className="py-24 px-6 md:px-12 min-h-screen relative bg-card"
     >
       <div className="max-w-5xl mx-auto relative z-10">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div className="space-y-3">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary">
@@ -156,7 +147,6 @@ export default function Bookshelf() {
             </p>
           </div>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center gap-3 bg-background p-3 rounded-lg border border-border/50 shadow-sm">
             <Label
               htmlFor="view-toggle"
@@ -183,7 +173,6 @@ export default function Bookshelf() {
           </div>
         </div>
 
-        {/* Visual Mode - 3D Books with Shelves */}
         {mode === "visual" && (
           <div className="space-y-16">
             {Array.from({ length: Math.ceil(allBooks.length / 4) }).map(
@@ -197,7 +186,6 @@ export default function Bookshelf() {
                       ))}
                   </div>
 
-                  {/* Shelf Graphic */}
                   <div className="absolute -bottom-8 left-[-50px] right-[-50px] h-8 bg-[#3e2723] shadow-[0_10px_20px_rgba(0,0,0,0.15)] rounded-sm transform perspective-[1000px] rotate-x-12 border-t border-[#5d4037]">
                     <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
                   </div>
@@ -207,7 +195,6 @@ export default function Bookshelf() {
           </div>
         )}
 
-        {/* Text Mode - Simple List */}
         {mode === "text" && (
           <div className="max-w-2xl">
             {allBooks.map((book) => (
@@ -216,7 +203,6 @@ export default function Bookshelf() {
           </div>
         )}
 
-        {/* Book Count */}
         <div className="text-center py-8 mt-12 border-t border-border/20">
           <p className="text-sm text-muted-foreground">
             {allBooks.length} book{allBooks.length !== 1 ? "s" : ""} in collection
