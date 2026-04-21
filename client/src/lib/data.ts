@@ -25,7 +25,7 @@ export interface About {
 export const defaultAbout: About = {
   content: `<p>Welcome to my corner of the internet. I'm a curious mind drawn to the intersections of technology, culture, and design.</p><p>This space serves as both a personal archive and a public notebook—a place to collect thoughts, share discoveries, and document the ongoing project of making sense of the world.</p>`,
   profileImage: "/State_Quality_Mark_Of_The_USSR_(Black).png",
-  gallery: []
+  gallery: ["/gallery/129thrqw.png"]
 };
 
 // LocalStorage keys

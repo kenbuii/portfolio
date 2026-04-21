@@ -30,7 +30,7 @@ import {
   Image as ImageIcon, Save, Search, BookOpen, ExternalLink, MessageSquareQuote,
   GripVertical
 } from "lucide-react";
-import { Inspiration, saveInspirationsToCloud, saveInspirationToCloud, deleteInspirationFromCloud } from "@/lib/supabase";
+import { Inspiration, fetchInspirations, saveInspirationsToCloud, saveInspirationToCloud, deleteInspirationFromCloud } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -170,7 +170,7 @@ export default function InspirationsEditor({ onSave }: InspirationsEditorProps) 
   const poemSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoad = useRef(true);
 
-  // Load from localStorage
+  // Load from localStorage first, then override with Supabase data
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -180,9 +180,20 @@ export default function InspirationsEditor({ onSave }: InspirationsEditorProps) 
         console.error("Failed to parse saved inspirations");
       }
     }
-    setTimeout(() => {
-      isInitialLoad.current = false;
-    }, 100);
+    fetchInspirations()
+      .then((data) => {
+        if (data?.length > 0) {
+          setInspirations(data);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          window.dispatchEvent(new Event("inspirations-updated"));
+        }
+      })
+      .catch((err) => console.error("[InspirationsEditor] Failed to fetch from Supabase:", err.message))
+      .finally(() => {
+        setTimeout(() => {
+          isInitialLoad.current = false;
+        }, 100);
+      });
   }, []);
 
   // Auto-save function — saves locally then syncs to Supabase

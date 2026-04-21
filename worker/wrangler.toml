@@ -1,0 +1,8 @@
+name = "kenbui-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "kenbui.net/*", zone_name = "kenbui.net" },
+  { pattern = "www.kenbui.net/*", zone_name = "kenbui.net" }
+]

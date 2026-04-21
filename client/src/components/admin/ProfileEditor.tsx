@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, RefreshCw, Cloud, CloudOff, FileText, Eye } from "lucide-react";
 // Cloud/CloudOff used for last-synced indicator
 import { Profile, getStoredProfile, saveProfile, defaultProfile } from "@/lib/data";
-import { saveProfileToCloud } from "@/lib/supabase";
+import { saveProfileToCloud, fetchProfile } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import RichTextEditor from "./RichTextEditor";
 
@@ -22,6 +22,14 @@ export default function ProfileEditor({ onSave }: ProfileEditorProps) {
 
   useEffect(() => {
     setProfile(getStoredProfile());
+    fetchProfile()
+      .then((data) => {
+        if (data?.name) {
+          setProfile(data);
+          saveProfile(data);
+        }
+      })
+      .catch((err) => console.error("[ProfileEditor] Failed to fetch from Supabase:", err.message));
   }, []);
 
   const handleSave = async () => {

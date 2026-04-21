@@ -202,7 +202,7 @@ export default function Admin() {
   const [cloudDiagnostic, setCloudDiagnostic] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Load saved books from localStorage
+  // Load books from localStorage first, then override with Supabase
   useEffect(() => {
     const savedBooks = localStorage.getItem(STORAGE_KEYS.BOOKS);
     if (savedBooks) {
@@ -212,9 +212,17 @@ export default function Admin() {
          console.error("Failed to parse saved books");
        }
     }
+    fetchBooks()
+      .then((data) => {
+        if (data?.length > 0) {
+          setBooks(data);
+          localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error("[Admin] Failed to fetch books from Supabase:", err.message));
   }, []);
 
-  // Load + sync inspirations from localStorage
+  // Load inspirations from localStorage, then override with Supabase
   useEffect(() => {
     const load = () => {
       const saved = localStorage.getItem("portfolio_inspirations");
@@ -223,6 +231,15 @@ export default function Admin() {
       }
     };
     load();
+    fetchInspirations()
+      .then((data) => {
+        if (data?.length > 0) {
+          setInspirations(data);
+          localStorage.setItem("portfolio_inspirations", JSON.stringify(data));
+          window.dispatchEvent(new Event("inspirations-updated"));
+        }
+      })
+      .catch((err) => console.error("[Admin] Failed to fetch inspirations from Supabase:", err.message));
     window.addEventListener("inspirations-updated", load);
     return () => window.removeEventListener("inspirations-updated", load);
   }, []);

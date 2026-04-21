@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Inspiration, fetchInspirations } from "@/lib/supabase";
-import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { X, Quote, Palette, FileText, MessageSquareQuote, ExternalLink } from "lucide-react";
 
@@ -97,13 +96,14 @@ function InspirationCard({
     <div
       onClick={onClick}
       className={cn(
-        "group bg-background border border-border/50 rounded-sm shadow-md cursor-pointer",
+        "group border border-border/50 rounded-sm shadow-md cursor-pointer",
         "transition-all duration-300 ease-out break-inside-avoid",
         "hover:shadow-xl hover:scale-[1.02] hover:z-10",
         item.featured && "ring-2 ring-secondary/30"
       )}
       style={{
         transform: `rotate(${rotation}deg)`,
+        backgroundImage: "url('/textures/paper.png')",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "rotate(0deg) translateY(-4px)";
@@ -364,7 +364,7 @@ export default function Inspirations() {
       .then((data) => {
         if (data?.length > 0) setInspirations(data);
       })
-      .catch(() => {})
+      .catch((err) => console.error("[Inspirations] Failed to fetch from Supabase:", err.message))
       .finally(() => setLoading(false));
     
     const handleUpdate = () => {
@@ -402,7 +402,23 @@ export default function Inspirations() {
   if (loading) {
     return (
       <Layout>
-        <LoadingScreen variant="suprematist" duration={1500} />
+        <section className="pt-32 pb-24 px-6 md:px-12 min-h-screen">
+          <div className="max-w-5xl mx-auto">
+            <div className="space-y-3 mb-12">
+              <div className="h-10 w-56 bg-muted/60 rounded animate-pulse" />
+              <div className="h-5 w-96 bg-muted/40 rounded animate-pulse" />
+            </div>
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="mb-6 bg-muted/30 border border-border/30 rounded-sm animate-pulse"
+                  style={{ height: `${150 + (i % 3) * 60}px`, animationDelay: `${i * 120}ms` }}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
       </Layout>
     );
   }

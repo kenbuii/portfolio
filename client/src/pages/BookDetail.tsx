@@ -24,7 +24,7 @@ export default function BookDetail() {
 
     fetchBooks()
       .then((data) => { if (data?.length > 0) setAllBooks(data); })
-      .catch(() => {})
+      .catch((err) => console.error("[BookDetail] Failed to fetch from Supabase:", err.message))
       .finally(() => setLoading(false));
   }, []);
 

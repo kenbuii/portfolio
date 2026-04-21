@@ -3,16 +3,20 @@ import { getStoredProfile, Profile, defaultProfile } from "@/lib/data";
 import { fetchProfile } from "@/lib/supabase";
 import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 
+const SESSION_KEY = "portfolio_loaded";
+
 export default function Hero() {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
-  const [loading, setLoading] = useState(true);
+  const alreadyLoaded = sessionStorage.getItem(SESSION_KEY) === "true";
+  const [loading, setLoading] = useState(!alreadyLoaded);
 
   useEffect(() => {
     fetchProfile()
       .then((data) => {
         if (data?.name) setProfile(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[Hero] Failed to fetch profile from Supabase:", err.message);
         setProfile(getStoredProfile());
       })
       .finally(() => setLoading(false));
@@ -31,7 +35,13 @@ export default function Hero() {
   }, []);
 
   if (loading) {
-    return <LoadingScreen variant="suprematist" duration={1500} />;
+    return (
+      <LoadingScreen
+        variant="suprematist"
+        duration={1500}
+        onComplete={() => sessionStorage.setItem(SESSION_KEY, "true")}
+      />
+    );
   }
 
   return (

@@ -18,8 +18,18 @@ let supabase: SupabaseClient | null = null;
 
 if (supabaseUrl && supabaseAnonKey && !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
-} else if (supabaseUrl && isPlaceholder(supabaseUrl)) {
-  console.warn("[Supabase] Placeholder credentials detected in .env — update VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with real values");
+  console.log("[Supabase] Client initialized →", supabaseUrl);
+} else {
+  const reason = !supabaseUrl && !supabaseAnonKey
+    ? "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are not set"
+    : isPlaceholder(supabaseUrl) || isPlaceholder(supabaseAnonKey)
+      ? "Placeholder credentials detected"
+      : "Unknown configuration issue";
+  if (import.meta.env.PROD) {
+    console.error(`[Supabase] ⚠ NOT CONFIGURED in production build: ${reason}. Data will not load from the cloud. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as build-time environment variables in your hosting dashboard.`);
+  } else {
+    console.warn(`[Supabase] Not configured: ${reason}. Falling back to Express API proxy.`);
+  }
 }
 
 const useDirectSupabase = () => !!supabase;
@@ -56,6 +66,13 @@ async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  if (import.meta.env.PROD) {
+    throw new Error(
+      `[Supabase] Cannot call ${endpoint} — no Express API server in production. ` +
+      `Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as build-time environment variables in your hosting dashboard (e.g. Cloudflare Pages).`
+    );
+  }
+
   console.log(`[Supabase] API fallback → ${options?.method || "GET"} ${endpoint}`);
   
   let response: Response;

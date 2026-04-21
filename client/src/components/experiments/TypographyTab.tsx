@@ -24,36 +24,50 @@ const fontPairings: FontPairing[] = [
     id: "current",
     name: "Current (Mid-Century)",
     heading: "'Clarendon', 'Rockwell', Georgia, serif",
-    body: "'Century Gothic', 'Avant Garde', sans-serif",
-    description: "Classic slab serif with geometric sans",
+    body: "'Instrument Serif', Georgia, serif",
+    description: "Classic slab serif with elegant body text",
   },
   {
-    id: "swiss",
-    name: "Swiss Modern",
-    heading: "'Space Grotesk', sans-serif",
-    body: "'Inter', sans-serif",
-    description: "Clean, neutral, highly readable",
+    id: "warm-editorial",
+    name: "Warm Editorial",
+    heading: "'Playfair Display', serif",
+    body: "'Lora', serif",
+    description: "Like a beautifully typeset magazine — high contrast display with warm readable body",
+  },
+  {
+    id: "modernist-warm",
+    name: "Modernist but Warm",
+    heading: "'DM Serif Display', serif",
+    body: "'Libre Baskerville', serif",
+    description: "Still modernist/constructivist but with more personality and warmth",
   },
   {
     id: "brutalist",
-    name: "Brutalist Editorial",
-    heading: "'Bebas Neue', sans-serif",
-    body: "'DM Sans', sans-serif",
-    description: "Bold condensed with refined body text",
+    name: "Brutalist Industrial",
+    heading: "'Oswald', sans-serif",
+    body: "'Space Mono', monospace",
+    description: "Industrial condensed sans with monospaced body — leans into the constructivist theme",
   },
   {
     id: "humanist",
-    name: "Humanist Literary",
-    heading: "'Cormorant Garamond', serif",
-    body: "'Lora', serif",
-    description: "Elegant serifs for long-form reading",
+    name: "Humanist Approachable",
+    heading: "'Merriweather', serif",
+    body: "'Source Serif 4', serif",
+    description: "Softer, more personal feel — optimized for comfortable reading",
   },
   {
-    id: "geometric",
-    name: "Geometric Display",
-    heading: "'Syne', sans-serif",
-    body: "'Outfit', sans-serif",
-    description: "Contemporary with personality",
+    id: "brutalist-editorial",
+    name: "Brutalist Editorial",
+    heading: "'Bebas Neue', sans-serif",
+    body: "'DM Sans', sans-serif",
+    description: "Bold condensed with refined geometric body text",
+  },
+  {
+    id: "literary",
+    name: "Literary Classic",
+    heading: "'Cormorant Garamond', serif",
+    body: "'Lora', serif",
+    description: "Elegant old-style serifs for long-form reading",
   },
 ];
 
@@ -249,42 +263,60 @@ export default function TypographyTab() {
             ))}
           </div>
 
-          {/* Pairing preview */}
+          {/* Pairing preview — simulates real portfolio content */}
           {currentPairing && (
-            <div className="bg-card rounded-lg border border-border/50 p-8 space-y-6">
-              <div>
+            <div className="bg-card rounded-lg border border-border/50 overflow-hidden">
+              {/* Hero simulation */}
+              <div className="p-8 pb-6">
+                <div className="flex gap-6 mb-6 text-xs tracking-wider uppercase" style={{ fontFamily: currentPairing.body }}>
+                  <span className="text-muted-foreground">Home</span>
+                  <span className="text-secondary">About</span>
+                  <span className="text-muted-foreground">Bookshelf</span>
+                  <span className="text-muted-foreground">Inspirations</span>
+                </div>
                 <h1
-                  className="text-4xl font-bold mb-3"
+                  className="text-5xl md:text-6xl font-bold mb-4 leading-[1.1]"
                   style={{ fontFamily: currentPairing.heading }}
                 >
-                  Heading in {currentPairing.name.split(" ")[0]}
+                  Ken Bui
                 </h1>
                 <p
-                  className="text-lg leading-relaxed"
+                  className="text-lg leading-relaxed max-w-xl"
                   style={{ fontFamily: currentPairing.body }}
                 >
-                  Body text demonstrating the pairing. The quick brown fox jumps over the lazy dog.
-                  This sentence shows how longer passages would appear with this font combination.
+                  A curious mind drawn to the intersections of technology, culture, and design. This space serves as both a personal archive and a public notebook.
                 </p>
               </div>
               
-              <div className="pt-4 border-t border-border/30">
+              {/* About section simulation */}
+              <div className="border-t border-border/30 p-8 pt-6">
                 <h2
-                  className="text-2xl font-bold mb-2"
+                  className="text-2xl font-bold mb-3"
                   style={{ fontFamily: currentPairing.heading }}
                 >
-                  Subheading Example
+                  About
                 </h2>
                 <p
-                  className="text-base"
+                  className="text-base leading-relaxed mb-4"
                   style={{ fontFamily: currentPairing.body }}
                 >
-                  More body text to show the relationship between headings and paragraphs.
-                  Good typography creates visual hierarchy and improves readability.
+                  Welcome to my corner of the internet. This is what longer body text looks like with this font pairing — notice the readability, character spacing, and overall warmth of the typeface combination.
+                </p>
+                <h3
+                  className="text-lg font-bold mb-2"
+                  style={{ fontFamily: currentPairing.heading }}
+                >
+                  Bookshelf
+                </h3>
+                <p
+                  className="text-sm"
+                  style={{ fontFamily: currentPairing.body }}
+                >
+                  A non-exhaustive collection of things I've read.
                 </p>
               </div>
               
-              <div className="text-xs font-mono text-muted-foreground pt-4 border-t border-border/30">
+              <div className="bg-muted/30 px-8 py-4 text-xs font-mono text-muted-foreground">
                 <p>Heading: {currentPairing.heading}</p>
                 <p>Body: {currentPairing.body}</p>
               </div>

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { books as defaultBooks, Book, STORAGE_KEYS } from "@/lib/data";
 import { fetchBooks } from "@/lib/supabase";
-import { LoadingScreen } from "@/components/constructivist/LoadingScreen";
 import BookMotion from "./BookMotion";
 import Book3D from "./Book3D";
 import { Switch } from "@/components/ui/switch";
@@ -118,18 +117,32 @@ export default function Bookshelf() {
       .then((data) => {
         if (data?.length > 0) setAllBooks(data);
       })
-      .catch(() => {})
+      .catch((err) => console.error("[Bookshelf] Failed to fetch from Supabase:", err.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
-    return <LoadingScreen variant="suprematist" duration={1500} />;
+    return (
+      <section id="bookshelf" className="py-24 px-6 md:px-12 min-h-screen relative">
+        <div className="max-w-5xl mx-auto">
+          <div className="space-y-3 mb-12">
+            <div className="h-10 w-48 bg-muted/60 rounded animate-pulse" />
+            <div className="h-5 w-80 bg-muted/40 rounded animate-pulse" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 place-items-center">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="w-28 h-40 bg-muted/50 rounded shadow-md animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
     <section
       id="bookshelf"
-      className="py-24 px-6 md:px-12 min-h-screen relative bg-card"
+      className="py-24 px-6 md:px-12 min-h-screen relative"
     >
       <div className="max-w-5xl mx-auto relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
@@ -186,7 +199,10 @@ export default function Bookshelf() {
                       ))}
                   </div>
 
-                  <div className="absolute -bottom-8 left-[-50px] right-[-50px] h-8 bg-[#3e2723] shadow-[0_10px_20px_rgba(0,0,0,0.15)] rounded-sm transform perspective-[1000px] rotate-x-12 border-t border-[#5d4037]">
+                  <div
+                    className="absolute -bottom-8 left-[-50px] right-[-50px] h-8 shadow-[0_10px_20px_rgba(0,0,0,0.15)] rounded-sm transform perspective-[1000px] rotate-x-12"
+                    style={{ backgroundImage: "url('/textures/wood.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
                   </div>
                 </div>

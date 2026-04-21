@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Cloud, CloudOff, FileText, Eye, Image as ImageIcon, Plus, Trash2, Check, Loader2, Save } from "lucide-react";
 import { About, getStoredAbout, saveAbout, defaultAbout } from "@/lib/data";
-import { saveAboutToCloud } from "@/lib/supabase";
+import { saveAboutToCloud, fetchAbout } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import RichTextEditor from "./RichTextEditor";
 
@@ -29,13 +29,23 @@ export default function AboutEditor({ onSave }: AboutEditorProps) {
   const isInitialLoad = useRef(true);
   const skipNextAutoSave = useRef(false);
 
-  // Load initial data
+  // Load initial data from localStorage, then override with Supabase
   useEffect(() => {
     setAbout(getStoredAbout());
-    // Mark initial load complete after a tick
-    setTimeout(() => {
-      isInitialLoad.current = false;
-    }, 100);
+    fetchAbout()
+      .then((data) => {
+        if (data?.content) {
+          skipNextAutoSave.current = true;
+          setAbout(data);
+          saveAbout(data);
+        }
+      })
+      .catch((err) => console.error("[AboutEditor] Failed to fetch from Supabase:", err.message))
+      .finally(() => {
+        setTimeout(() => {
+          isInitialLoad.current = false;
+        }, 100);
+      });
   }, []);
 
   // Auto-save function — saves locally then syncs to Supabase

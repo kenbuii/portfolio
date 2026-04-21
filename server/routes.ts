@@ -464,6 +464,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // Spotify API — Recently Saved Tracks
+  // Requires: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN
+  // Get a refresh token via https://developer.spotify.com/documentation/web-api/tutorials/code-flow
+  // ============================================
+
+  let spotifyAccessToken: string | null = null;
+  let spotifyTokenExpiry = 0;
+
+  async function getSpotifyAccessToken(): Promise<string | null> {
+    const clientId = process.env.SPOTIFY_CLIENT_ID;
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+    const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
+
+    if (!clientId || !clientSecret || !refreshToken) return null;
+
+    if (spotifyAccessToken && Date.now() < spotifyTokenExpiry) {
+      return spotifyAccessToken;
+    }
+
+    const res = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("[Spotify] Token refresh failed:", res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    spotifyAccessToken = data.access_token;
+    spotifyTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+    return spotifyAccessToken;
+  }
+
+  app.get("/api/spotify/recently-saved", async (req, res) => {
+    try {
+      const token = await getSpotifyAccessToken();
+      if (!token) {
+        return res.status(503).json({
+          error: "Spotify not configured",
+          hint: "Set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, and SPOTIFY_REFRESH_TOKEN environment variables.",
+        });
+      }
+
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+      const spotifyRes = await fetch(
+        `https://api.spotify.com/v1/me/tracks?limit=${limit}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!spotifyRes.ok) {
+        const err = await spotifyRes.text();
+        console.error("[Spotify] API error:", spotifyRes.status, err);
+        return res.status(spotifyRes.status).json({ error: "Spotify API error" });
+      }
+
+      const data = await spotifyRes.json();
+      const tracks = data.items.map((item: any) => ({
+        id: item.track.id,
+        name: item.track.name,
+        artist: item.track.artists.map((a: any) => a.name).join(", "),
+        album: item.track.album.name,
+        albumArt: item.track.album.images?.[0]?.url || null,
+        albumArtSmall: item.track.album.images?.[2]?.url || item.track.album.images?.[0]?.url || null,
+        previewUrl: item.track.preview_url,
+        spotifyUrl: item.track.external_urls?.spotify,
+        duration: item.track.duration_ms,
+        addedAt: item.added_at,
+      }));
+
+      res.json({ tracks, total: data.total });
+    } catch (error) {
+      console.error("[Spotify] Failed to fetch recently saved:", error);
+      res.status(500).json({ error: "Failed to fetch Spotify data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

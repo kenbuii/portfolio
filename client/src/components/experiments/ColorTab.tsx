@@ -436,6 +436,53 @@ export default function ColorTab() {
               </p>
             </div>
           </div>
+          
+          {/* Loader Preview */}
+          <div className="mt-6">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Loader Preview (checks palette continuity)
+            </h3>
+            <div
+              className="rounded-lg overflow-hidden border relative h-48 flex flex-col items-center justify-center gap-6"
+              style={{
+                backgroundColor: currentPalette.colors.background,
+                borderColor: currentPalette.colors.border,
+              }}
+            >
+              {/* Mini suprematist animation */}
+              <div className="relative w-24 h-24">
+                <div
+                  className="absolute w-12 h-12 rounded-full animate-pulse"
+                  style={{ backgroundColor: currentPalette.colors.foreground, top: 0, left: 6 }}
+                />
+                <div
+                  className="absolute w-16 h-4 animate-pulse"
+                  style={{ backgroundColor: currentPalette.colors.secondary, top: 28, left: 20, animationDelay: "200ms" }}
+                />
+                <svg viewBox="0 0 60 40" className="absolute bottom-0 left-0 w-16 h-10">
+                  <polygon
+                    points="0,8 0,32 50,20"
+                    style={{ fill: currentPalette.colors.accent }}
+                    className="animate-pulse"
+                  />
+                </svg>
+              </div>
+              
+              <div
+                className="uppercase tracking-[0.3em] text-xs"
+                style={{ color: currentPalette.colors.foreground, fontFamily: "'Bebas Neue', Impact, sans-serif" }}
+              >
+                K · E · N · B · U · I
+              </div>
+              
+              <p
+                className="absolute bottom-3 right-4 text-[10px] italic"
+                style={{ color: currentPalette.colors.mutedForeground }}
+              >
+                This is what visitors see first
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

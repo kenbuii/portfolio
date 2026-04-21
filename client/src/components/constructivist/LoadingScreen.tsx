@@ -53,16 +53,14 @@ export function LoadingScreen({
     return () => clearTimeout(timer);
   }, [duration, onComplete]);
   
-  // All variants use the same paper/cream background as the main page
   return (
     <div
       className={cn(
         "fixed inset-0 z-50 flex flex-col items-center justify-center gap-12 transition-opacity duration-500",
-        "bg-[#F5F0E6]",
+        "bg-background",
         !isVisible && "opacity-0 pointer-events-none"
       )}
     >
-      {/* Animation Container - scaled 2x */}
       <div className="transform scale-[2] origin-center">
         {variant === "gears" && <ConstructivistGears isPlaying={true} />}
         {variant === "suprematist" && <SuprematistLoader isPlaying={true} />}
@@ -70,9 +68,8 @@ export function LoadingScreen({
         {variant === "minimal" && <MinimalWedge />}
       </div>
       
-      {/* Loading Text */}
       <div 
-        className="uppercase tracking-[0.4em] text-sm text-[#0A0A0A]"
+        className="uppercase tracking-[0.4em] text-sm text-foreground"
         style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}
       >
         {(variant === "gears" || variant === "factory") && (
@@ -106,8 +103,7 @@ function MinimalWedge() {
     <svg viewBox="0 0 100 60" className="w-24 h-16">
       <polygon 
         points="0,10 0,50 80,30" 
-        fill="#CC2936"
-        className="animate-pulse"
+        className="animate-pulse fill-secondary"
       />
     </svg>
   );
